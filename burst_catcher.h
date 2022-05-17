@@ -1,3 +1,7 @@
+/*
+ * Copyright 2022 ICE9 Consulting LLC
+ */
+
 #ifndef __BURST_CATCHER_H__
 #define __BURST_CATCHER_H__
 

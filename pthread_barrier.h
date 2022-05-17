@@ -1,3 +1,7 @@
+/*
+ * Copyright 2022 ICE9 Consulting LLC
+ */
+
 #ifndef PTHREAD_BARRIER_H_
 #define PTHREAD_BARRIER_H_
 

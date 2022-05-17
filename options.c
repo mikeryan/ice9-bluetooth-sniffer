@@ -1,3 +1,7 @@
+/*
+ * Copyright 2022 ICE9 Consulting LLC
+ */
+
 #include <err.h>
 #include <getopt.h>
 #include <stdio.h>

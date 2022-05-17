@@ -1,3 +1,7 @@
+/*
+ * Copyright 2022 ICE9 Consulting LLC
+ */
+
 #include <math.h>
 #include <stdio.h>
 #include <stdlib.h>

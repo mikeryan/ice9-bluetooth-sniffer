@@ -1,3 +1,7 @@
+/*
+ * Copyright (c) 2022 ICE9 Consulting LLC
+ */
+
 #ifndef __BLUETOOTH_H__
 #define __BLUETOOTH_H__
 

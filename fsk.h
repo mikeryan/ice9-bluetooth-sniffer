@@ -1,3 +1,7 @@
+/*
+ * Copyright 2022 ICE9 Consulting LLC
+ */
+
 #ifndef __FSK_H__
 #define __FSK_H__
 

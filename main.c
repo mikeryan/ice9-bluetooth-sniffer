@@ -1,3 +1,7 @@
+/*
+ * Copyright 2022 ICE9 Consulting LLC
+ */
+
 #define _GNU_SOURCE
 #include <complex.h>
 #include <err.h>

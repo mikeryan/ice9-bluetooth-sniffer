@@ -1,3 +1,5 @@
+# Copyright (c) 2022 ICE9 Consulting LLC
+
 PROG = ice9-bluetooth
 OBJS = bluetooth.o burst_catcher.o fsk.o main.o hash.o options.o help.o
 

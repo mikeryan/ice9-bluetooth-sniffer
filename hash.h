@@ -1,3 +1,7 @@
+/*
+ * Copyright 2022 ICE9 Consulting LLC
+ */
+
 #ifndef __HASH_H__
 #define __HASH_H__
 
