@@ -1,0 +1,23 @@
+Usage: ice9-bluetooth <-f <file.fc32> | -l> -c <center-freq> -C <chan>
+Captures Bluetooth packets using a HackRF SDR.
+
+Mandatory arguments:
+    -f, --file=FILE         read input from fc32 file (cfile)
+    -l, --capture           capture live (cannot combine with -f)
+    -c, --center-freq=FREQ  center frequency (in MHz)
+    -C, --channels=CHAN     number of channels to capture (4, 8, 12, 16, 20)
+
+Optional arguments:
+    -w, --fifo=OUTPUT       output pcap to OUTPUT (may be a pcap file or FIFO)
+    -s, --stats             print performance stats periodically
+    -v, --verbose           print detailed info about captured bursts
+    -i IFACE                which HackRF to use, example: hackrf-1234abcd
+
+This tool also supports the Wireshark extcap interface:
+    ice-bluetooth --extcap-interfaces
+    ice-bluetooth --extcap-interface=INTERFACE --extcap-dlts
+    ice-bluetooth --extcap-interface=INTERFACE --extcap-config
+    ice-bluetooth --extcap-interface=INTERFACE --fifo=PATH_FILENAME --capture
+
+ICE9 Bluetooth Sniffer was designed and written by Mike Ryan of ICE9 Consulting.
+For more information visit https://ice9.us/
