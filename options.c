@@ -53,7 +53,7 @@ static void _print_config(void) {
     printf("value {arg=0}{value=12}{display=12}{default=false}\n");
     printf("value {arg=0}{value=16}{display=16}{default=false}\n");
     printf("value {arg=0}{value=20}{display=20}{default=true}\n");
-    printf("arg {number=1}{call=--center-freq}{display=Center Frequency}{tooltip=Center frequency to capture on}{type=integer}{range=2400,2480}{default=2435}\n");
+    printf("arg {number=1}{call=--center-freq}{display=Center Frequency}{tooltip=Center frequency to capture on}{type=integer}{range=2400,2480}{default=2427}\n");
     exit(0);
 }
 

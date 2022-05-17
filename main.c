@@ -33,7 +33,7 @@
 
 float samp_rate = 0.f;
 unsigned channels = 20;
-unsigned center_freq = 2435;
+unsigned center_freq = 2427;
 lell_pcap_handle *pcap = NULL;
 char *base_name = NULL;
 int live = 0;
