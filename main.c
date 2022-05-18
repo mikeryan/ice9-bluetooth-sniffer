@@ -17,11 +17,12 @@
 
 #include <btbb.h>
 #include <liquid/liquid.h>
-#include <libhackrf/hackrf.h>
 
 #include "bluetooth.h"
 #include "burst_catcher.h"
 #include "fsk.h"
+#include "hackrf.h"
+#include "sdr.h"
 
 #define C_FEK_BLOCKING_QUEUE_IMPLEMENTATION
 #define C_FEK_FAIR_LOCK_IMPLEMENTATION
@@ -46,8 +47,6 @@ pid_t self_pid;
 
 unsigned sps(void) { return (unsigned)(samp_rate / channels / 1e6f * 2.0f); }
 
-const unsigned vga_gain = 32;
-const unsigned lna_gain = 32;
 const float sym_rate = 1e6f;
 const float lp_cutoff = 0.75f; // cutoff in MHz
 const unsigned m = 4; // magical polyphase filter bank number (filter half-length)
@@ -69,11 +68,6 @@ unsigned long agc_start, agc_end;
 
 static burst_catcher_t *catcher = NULL;
 static firpfbch2_crcf magic;
-
-typedef struct _sample_buf_t {
-    unsigned num;
-    float complex samples[];
-} sample_buf_t;
 
 sample_buf_t *next_samples = NULL;
 pthread_t channelizer;
@@ -402,43 +396,6 @@ void deinit_threads(int join_spewer) {
     pthread_join(burst_processor, NULL);
 }
 
-hackrf_device *hackrf_setup(void) {
-    hackrf_device *hackrf;
-
-    hackrf_init();
-
-    if (serial == NULL) {
-        if (hackrf_open(&hackrf) != HACKRF_SUCCESS)
-            errx(1, "Unable to open HackRF");
-    } else {
-        if (hackrf_open_by_serial(serial, &hackrf) != HACKRF_SUCCESS)
-            errx(1, "Unable to open HackRF");
-    }
-    if (hackrf_set_sample_rate(hackrf, samp_rate) != HACKRF_SUCCESS)
-        errx(1, "Unable to set HackRF sample rate");
-    if (hackrf_set_freq(hackrf, center_freq * 1e6) != HACKRF_SUCCESS)
-        errx(1, "Unable to set HackRF center frequency");
-    if (hackrf_set_vga_gain(hackrf, vga_gain) != HACKRF_SUCCESS)
-        errx(1, "Unable to set HackRF VGA gain");
-    if (hackrf_set_lna_gain(hackrf, lna_gain) != HACKRF_SUCCESS)
-        errx(1, "Unable to set HackRF LNA gain");
-
-    return hackrf;
-}
-
-int hackrf_rx_cb(hackrf_transfer *t) {
-    unsigned i;
-    sample_buf_t *s = malloc(sizeof(*s) + t->valid_length * 4);
-    s->num = t->valid_length / 2;
-    for (i = 0; i < s->num; ++i)
-        s->samples[i] = ((int8_t *)t->buffer)[2*i] / 128.0f + ((int8_t *)t->buffer)[2*i+1] / 128.0f * I;
-    if (running)
-        push_samples(s);
-    else
-        free(s);
-    return 0;
-}
-
 void sig(int signo) {
     running = 0;
 }
@@ -483,19 +440,19 @@ int main(int argc, char **argv) {
         hackrf_start_rx(hackrf, hackrf_rx_cb, NULL);
 
     while (running) {
-        if (live && !hackrf_is_streaming(hackrf))
+        if (live && hackrf != NULL && !hackrf_is_streaming(hackrf))
             break;
         pause();
     }
     running = 0;
     kick_rx_cb();
 
-    if (live)
+    if (live && hackrf != NULL)
         hackrf_stop_rx(hackrf);
 
     deinit_threads(!live);
 
-    if (live) {
+    if (live && hackrf != NULL) {
         hackrf_close(hackrf);
         hackrf_exit();
     }
