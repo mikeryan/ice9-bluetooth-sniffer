@@ -19,25 +19,26 @@ extern char *serial;
 extern sig_atomic_t running;
 
 hackrf_device *hackrf_setup(void) {
+    int r;
     hackrf_device *hackrf;
 
     hackrf_init();
 
     if (serial == NULL) {
-        if (hackrf_open(&hackrf) != HACKRF_SUCCESS)
-            errx(1, "Unable to open HackRF");
+        if ((r = hackrf_open(&hackrf)) != HACKRF_SUCCESS)
+            errx(1, "Unable to open HackRF: %s", hackrf_error_name(r));
     } else {
-        if (hackrf_open_by_serial(serial, &hackrf) != HACKRF_SUCCESS)
-            errx(1, "Unable to open HackRF");
+        if ((r = hackrf_open_by_serial(serial, &hackrf)) != HACKRF_SUCCESS)
+            errx(1, "Unable to open HackRF: %s", hackrf_error_name(r));
     }
-    if (hackrf_set_sample_rate(hackrf, samp_rate) != HACKRF_SUCCESS)
-        errx(1, "Unable to set HackRF sample rate");
-    if (hackrf_set_freq(hackrf, center_freq * 1e6) != HACKRF_SUCCESS)
-        errx(1, "Unable to set HackRF center frequency");
-    if (hackrf_set_vga_gain(hackrf, vga_gain) != HACKRF_SUCCESS)
-        errx(1, "Unable to set HackRF VGA gain");
-    if (hackrf_set_lna_gain(hackrf, lna_gain) != HACKRF_SUCCESS)
-        errx(1, "Unable to set HackRF LNA gain");
+    if ((r = hackrf_set_sample_rate(hackrf, samp_rate)) != HACKRF_SUCCESS)
+        errx(1, "Unable to set HackRF sample rate: %s", hackrf_error_name(r));
+    if ((r = hackrf_set_freq(hackrf, center_freq * 1e6)) != HACKRF_SUCCESS)
+        errx(1, "Unable to set HackRF center frequency: %s", hackrf_error_name(r));
+    if ((r = hackrf_set_vga_gain(hackrf, vga_gain)) != HACKRF_SUCCESS)
+        errx(1, "Unable to set HackRF VGA gain: %s", hackrf_error_name(r));
+    if ((r = hackrf_set_lna_gain(hackrf, lna_gain)) != HACKRF_SUCCESS)
+        errx(1, "Unable to set HackRF LNA gain: %s", hackrf_error_name(r));
 
     return hackrf;
 }
