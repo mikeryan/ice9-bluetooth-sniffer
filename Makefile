@@ -6,7 +6,7 @@ OBJS = bluetooth.o burst_catcher.o fsk.o main.o options.o help.o hackrf.o blader
 EXTCAP_PATH = $(HOME)/.config/wireshark/extcap
 
 CFLAGS = -I/opt/homebrew/include -Wall -g -O0 -fsanitize=address
-LDFLAGS = -L/opt/homebrew/lib -lliquid -lbtbb -lhackrf -lbladerf -lpthread -fsanitize=address
+LDFLAGS = -L/opt/homebrew/lib -lliquid -lbtbb -lhackrf -lbladeRF -lpthread -fsanitize=address
 
 all: $(PROG)
 
