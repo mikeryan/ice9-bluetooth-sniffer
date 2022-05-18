@@ -123,15 +123,6 @@ void bluetooth_detect(uint8_t *bits, unsigned len, unsigned freq, uint32_t *lap_
                 lell_packet_unref(pkt);
             }
 
-#if 0
-            aa_stats_t *aa_stats = hash_find(aa_hash, p->aa);
-            if (aa_stats == NULL) {
-                aa_stats = calloc(1, sizeof(*aa));
-                hash_insert(aa_hash, aa, aa_stats);
-            }
-            ++aa_stats->count;
-#endif
-
             free(p);
         }
     }

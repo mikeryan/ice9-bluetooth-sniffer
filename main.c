@@ -22,7 +22,6 @@
 #include "bluetooth.h"
 #include "burst_catcher.h"
 #include "fsk.h"
-#include "hash.h"
 
 #define C_FEK_BLOCKING_QUEUE_IMPLEMENTATION
 #define C_FEK_FAIR_LOCK_IMPLEMENTATION
@@ -68,13 +67,8 @@ pthread_cond_t agc_buf_ready, agc_buf_done;
 pthread_barrier_local_t agc_barrier;
 unsigned long agc_start, agc_end;
 
-static hash_t *aa_hash = NULL;
 static burst_catcher_t *catcher = NULL;
 static firpfbch2_crcf magic;
-
-typedef struct _aa_stats_t {
-    unsigned count;
-} aa_stats_t;
 
 typedef struct _sample_buf_t {
     unsigned num;
@@ -469,7 +463,6 @@ int main(int argc, char **argv) {
     if (live)
         hackrf = hackrf_setup();
     btbb_init(1);
-    aa_hash = hash_new(0);
 
     unsigned h_len = 2*channels*m + 1;
     float *h = malloc(sizeof(float) * h_len);
@@ -505,14 +498,6 @@ int main(int argc, char **argv) {
     if (live) {
         hackrf_close(hackrf);
         hackrf_exit();
-    }
-
-    hash_iterator_t it;
-    aa_stats_t *aa_stat;
-    uint32_t aa = 0;
-    hash_iterator_init(&it, aa_hash);
-    while ((aa_stat = hash_iterator_next(&it, &aa)) != NULL) {
-        printf("%08x %7u\n", aa, aa_stat->count);
     }
 
     if (pcap)
