@@ -5,20 +5,20 @@ and 20 channels simultaneously.
 
 ## Dependencies
 
-This tool requires libliquid, libhackrf, and libbtbb. On Debian-based
-systems you can install these using:
+This tool requires libliquid, libhackrf, libbladerf, and libbtbb. On
+Debian-based systems you can install these using:
 
-    sudo apt install libliquid-dev libhackrf-dev libbtbb-dev
+    sudo apt install libliquid-dev libhackrf-dev libbladerf-dev libbtbb-dev
 
 On macOS, [Homebrew](https://brew.sh/) is the recommended package
 manager:
 
-    brew install liquid-dsp hackrf libbtbb
+    brew install liquid-dsp hackrf libbladerf libbtbb
 
 This code is untested against MacPorts. libbtbb does not appear to be
 packaged there, so you'll have to bring your own. For the other two:
 
-    port install liquid-dsp hackrf
+    port install liquid-dsp hackrf bladeRF
 
 ## Building and Installing
 
