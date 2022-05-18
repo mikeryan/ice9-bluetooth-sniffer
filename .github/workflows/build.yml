@@ -1,0 +1,19 @@
+name: C build
+
+on:
+  push:
+    branches: [ master ]
+  pull_request:
+    branches: [ master ]
+
+jobs:
+  build:
+
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v3
+    - name: install deps
+      run: sudo apt -y install libliquid-dev libbtbb-dev libhackrf-dev libbladerf-dev
+    - name: make
+      run: make
