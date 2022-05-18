@@ -43,6 +43,7 @@ int verbose = 0;
 int stats = 0;
 
 sig_atomic_t running = 1;
+pid_t self_pid;
 
 unsigned sps(void) { return (unsigned)(samp_rate / channels / 1e6f * 2.0f); }
 
@@ -262,6 +263,8 @@ void *spewer_thread(void *in_ptr) {
         samples = malloc(sizeof(*samples) + sizeof(float complex) * channels * AGC_BUFFER_SIZE);
     }
     free(samples);
+    running = 0;
+    kill(self_pid, SIGINT);
 
     return NULL;
 }
@@ -456,6 +459,7 @@ int main(int argc, char **argv) {
     signal(SIGINT, sig);
     signal(SIGTERM, sig);
     signal(SIGPIPE, sig);
+    self_pid = getpid();
 
     // enables , separator in printf
     setlocale(LC_NUMERIC, "");
