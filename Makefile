@@ -21,10 +21,10 @@ help.h: help.txt
 
 install:
 	install -d $(EXTCAP_PATH)
-	install ice9-bluetooth $(EXTCAP_PATH)
+	install $(PROG) $(EXTCAP_PATH)
 
 uninstall:
-	rm -f $(EXTCAP_PATH)/ice9-bluetooth
+	rm -f $(EXTCAP_PATH)/$(PROG)
 
 clean:
 	rm -f $(PROG) $(OBJS)
