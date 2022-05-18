@@ -22,6 +22,9 @@ hackrf_device *hackrf_setup(void) {
     int r;
     hackrf_device *hackrf;
 
+    if (samp_rate > 20e6)
+        errx(1, "Invalid number of channels for HackRF, must be 20 or fewer");
+
     hackrf_init();
 
     if (serial == NULL) {

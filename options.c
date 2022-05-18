@@ -62,6 +62,11 @@ static void _print_config(void) {
     printf("value {arg=0}{value=12}{display=12}{default=false}\n");
     printf("value {arg=0}{value=16}{display=16}{default=false}\n");
     printf("value {arg=0}{value=20}{display=20}{default=true}\n");
+    printf("value {arg=0}{value=24}{display=24}{default=false}\n");
+    printf("value {arg=0}{value=28}{display=28}{default=false}\n");
+    printf("value {arg=0}{value=32}{display=32}{default=false}\n");
+    printf("value {arg=0}{value=36}{display=36}{default=false}\n");
+    printf("value {arg=0}{value=40}{display=40}{default=false}\n");
     printf("arg {number=1}{call=--center-freq}{display=Center Frequency}{tooltip=Center frequency to capture on}{type=integer}{range=2400,2480}{default=2427}\n");
     exit(0);
 }
@@ -163,8 +168,8 @@ void parse_options(int argc, char **argv) {
         errx(1, "center freq is required");
     if (center_freq < 2400 || center_freq > 2480)
         errx(1, "invalid center freq");
-    if (channels != 4 && channels != 8 && channels != 12 && channels != 16 && channels != 20)
-        errx(1, "invalid channels, must be 4, 8, 12, 16, or 20");
+    if (channels < 4 || channels > 40 || (channels % 4) != 0)
+        errx(1, "invalid channels, must be between 4 and 40 and divisible by 4");
     samp_rate = channels * 1e6;
     if (do_capture)
         live = 1;
