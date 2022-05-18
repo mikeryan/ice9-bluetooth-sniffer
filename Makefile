@@ -1,12 +1,12 @@
 # Copyright (c) 2022 ICE9 Consulting LLC
 
 PROG = ice9-bluetooth
-OBJS = bluetooth.o burst_catcher.o fsk.o main.o options.o help.o hackrf.o
+OBJS = bluetooth.o burst_catcher.o fsk.o main.o options.o help.o hackrf.o bladerf.o
 
 EXTCAP_PATH = $(HOME)/.config/wireshark/extcap
 
 CFLAGS = -I/opt/homebrew/include -Wall -g -O0 -fsanitize=address
-LDFLAGS = -L/opt/homebrew/lib -lliquid -lbtbb -lhackrf -lpthread -fsanitize=address
+LDFLAGS = -L/opt/homebrew/lib -lliquid -lbtbb -lhackrf -lbladerf -lpthread -fsanitize=address
 
 all: $(PROG)
 

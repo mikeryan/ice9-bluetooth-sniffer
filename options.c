@@ -12,8 +12,11 @@
 #include <btbb.h>
 #include <libhackrf/hackrf.h>
 
+#include "bladerf.h"
+
 extern FILE *in;
 extern char *serial;
+extern int bladerf_num;
 
 extern float samp_rate;
 extern unsigned channels;
@@ -28,6 +31,8 @@ void usage(int exitcode);
 static void _print_interfaces(void) {
     int i;
     char *s;
+    int *bladesrf;
+    unsigned num_bladesrf;
     printf("extcap {version=1.0}\n");
     hackrf_init();
     hackrf_device_list_t *hackrf_devices = hackrf_device_list();
@@ -37,6 +42,10 @@ static void _print_interfaces(void) {
         printf("interface {value=hackrf-%s}{display=ICE9 Bluetooth}\n", s);
     }
     hackrf_device_list_free(hackrf_devices);
+    bladesrf = bladerf_list(&num_bladesrf);
+    for (i = 0; i < num_bladesrf; ++i)
+        printf("interface {value=bladerf%i}{display=ICE9 Bluetooth}\n", bladesrf[i]);
+    free(bladesrf);
     exit(0);
 }
 
@@ -92,9 +101,12 @@ void parse_options(int argc, char **argv) {
                 break;
 
             case 'i':
-                if (strstr(optarg, "hackrf-") != optarg)
-                    errx(1, "invalid interface, must start with \"hackrf-\"");
-                serial = strdup(optarg + strlen("hackrf-"));
+                if (strstr(optarg, "hackrf-") == optarg)
+                    serial = strdup(optarg + strlen("hackrf-"));
+                else if (strstr(optarg, "bladerf") == optarg)
+                    bladerf_num = atoi(optarg + strlen("bladerf"));
+                else
+                    errx(1, "invalid interface, must start with \"hackrf-\" or \"bladerf\"");
                 break;
 
             case 'w':

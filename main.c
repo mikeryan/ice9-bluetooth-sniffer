@@ -18,6 +18,7 @@
 #include <btbb.h>
 #include <liquid/liquid.h>
 
+#include "bladerf.h"
 #include "bluetooth.h"
 #include "burst_catcher.h"
 #include "fsk.h"
@@ -39,6 +40,7 @@ char *base_name = NULL;
 int live = 0;
 FILE *in = NULL;
 char *serial = NULL;
+int bladerf_num = -1;
 int verbose = 0;
 int stats = 0;
 
@@ -406,6 +408,8 @@ int main(int argc, char **argv) {
     unsigned i;
     // char *out_filename = NULL;
     hackrf_device *hackrf = NULL;
+    struct bladerf *bladerf = NULL;
+    pthread_t bladerf_thread;
 
     signal(SIGINT, sig);
     signal(SIGTERM, sig);
@@ -417,8 +421,13 @@ int main(int argc, char **argv) {
 
     parse_options(argc, argv);
 
-    if (live)
-        hackrf = hackrf_setup();
+    if (live) {
+        // TODO select first available interface
+        if (bladerf_num >= 0)
+            bladerf = bladerf_setup(bladerf_num);
+        else
+            hackrf = hackrf_setup();
+    }
     btbb_init(1);
 
     unsigned h_len = 2*channels*m + 1;
@@ -436,8 +445,12 @@ int main(int argc, char **argv) {
 
     init_threads(!live);
 
-    if (live)
-        hackrf_start_rx(hackrf, hackrf_rx_cb, NULL);
+    if (live) {
+        if (hackrf != NULL)
+            hackrf_start_rx(hackrf, hackrf_rx_cb, NULL);
+        else
+            pthread_create(&bladerf_thread, NULL, bladerf_stream_thread, (void *)bladerf);
+    }
 
     while (running) {
         if (live && hackrf != NULL && !hackrf_is_streaming(hackrf))
@@ -445,16 +458,26 @@ int main(int argc, char **argv) {
         pause();
     }
     running = 0;
+
     kick_rx_cb();
 
-    if (live && hackrf != NULL)
-        hackrf_stop_rx(hackrf);
+    if (live) {
+        if (hackrf != NULL)
+            hackrf_stop_rx(hackrf);
+        else
+            bladerf_enable_module(bladerf, BLADERF_MODULE_RX, false);
+    }
 
     deinit_threads(!live);
 
-    if (live && hackrf != NULL) {
-        hackrf_close(hackrf);
-        hackrf_exit();
+    if (live) {
+        if (hackrf != NULL) {
+            hackrf_close(hackrf);
+            hackrf_exit();
+        } else {
+            pthread_join(bladerf_thread, NULL);
+            bladerf_close(bladerf);
+        }
     }
 
     if (pcap)
