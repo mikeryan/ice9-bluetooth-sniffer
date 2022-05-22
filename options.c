@@ -13,6 +13,7 @@
 #include <libhackrf/hackrf.h>
 
 #include "bladerf.h"
+#include "pcap.h"
 
 extern FILE *in;
 extern char *serial;
@@ -21,7 +22,7 @@ extern int bladerf_num;
 extern float samp_rate;
 extern unsigned channels;
 extern unsigned center_freq;
-extern lell_pcap_handle *pcap;
+extern pcap_t *pcap;
 extern int live;
 extern int verbose;
 extern int stats;
@@ -115,7 +116,7 @@ void parse_options(int argc, char **argv) {
                 break;
 
             case 'w':
-                if (lell_pcap_create_file(optarg, &pcap) < 0)
+                if ((pcap = pcap_open(optarg)) == NULL)
                     errx(1, "Unable to create PCAP %s", optarg);
                 break;
 

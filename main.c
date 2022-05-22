@@ -23,6 +23,7 @@
 #include "burst_catcher.h"
 #include "fsk.h"
 #include "hackrf.h"
+#include "pcap.h"
 #include "sdr.h"
 
 #define C_FEK_BLOCKING_QUEUE_IMPLEMENTATION
@@ -35,7 +36,7 @@
 float samp_rate = 0.f;
 unsigned channels = 20;
 unsigned center_freq = 2427;
-lell_pcap_handle *pcap = NULL;
+pcap_t *pcap = NULL;
 char *base_name = NULL;
 int live = 0;
 FILE *in = NULL;
@@ -481,7 +482,7 @@ int main(int argc, char **argv) {
     }
 
     if (pcap)
-        lell_pcap_close(pcap);
+        pcap_close(pcap);
 
     for (i = 1; i < channels; ++i)
         burst_catcher_destroy(&catcher[i]);

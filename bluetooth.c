@@ -10,14 +10,9 @@
 #include <btbb.h>
 
 #include "bluetooth.h"
+#include "pcap.h"
 
-extern lell_pcap_handle *pcap;
-
-typedef struct _ble_packet_t {
-    uint32_t aa;
-    unsigned len; // length including AA + header + CRC
-    uint8_t data[0]; // data starts at AA
-} ble_packet_t;
+extern pcap_t *pcap;
 
 static const uint8_t whitening[] = {
     1, 1, 1, 1, 0, 1, 0, 1, 0, 1, 0, 0, 0, 0, 1, 0, 1, 1, 0, 1, 1, 1, 1, 0, 0,
@@ -82,7 +77,8 @@ ble_packet_t *ble_burst(uint8_t *bits, unsigned bits_len, unsigned freq) {
 #define MAX(X,Y) ((X) > (Y) ? (X) : (Y))
             ble_packet_t *p = malloc(sizeof(*p) + MAX(4 + 2 + smallest_header_len + 3, 64)); // FIXME bug in libbtbb
             p->aa = smallest_aa;
-            p->len = 2 + smallest_header_len + 3;
+            p->freq = freq;
+            p->len = 4 + 2 + smallest_header_len + 3;
             unsigned wh = whitening_index[channel];
             p->data[0] = (smallest_aa >>  0) & 0xff;
             p->data[1] = (smallest_aa >>  8) & 0xff;
@@ -116,13 +112,8 @@ void bluetooth_detect(uint8_t *bits, unsigned len, unsigned freq, uint32_t *lap_
         ble_packet_t * p = ble_burst(bits, len, freq);
         if (p != NULL) {
             *aa_out = p->aa;
-            if (pcap) {
-                lell_packet *pkt;
-                lell_allocate_and_decode(p->data, freq, 0, &pkt);
-                lell_pcap_append_packet(pcap, 0, 0, 0, p->aa, pkt);
-                lell_packet_unref(pkt);
-            }
-
+            if (pcap)
+                pcap_write_ble(pcap, p);
             free(p);
         }
     }
