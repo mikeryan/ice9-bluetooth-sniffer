@@ -3,15 +3,23 @@ project(ice9-bluetooth C)
 
 set(CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/cmake/Modules" ${CMAKE_MODULE_PATH})
 
-# TODO: Move to Find*-Modules
-set(CMAKE_C_FLAGS "-I/opt/homebrew/include -Wall -g -O0 -fsanitize=address")
-set(CMAKE_EXE_LINKER_FLAGS "-L/opt/homebrew/lib -lliquid -lbtbb -lhackrf -lbladeRF -fsanitize=address")
+set(CMAKE_C_FLAGS "-Wall -g -O0 -fsanitize=address")
+set(CMAKE_EXE_LINKER_FLAGS "-fsanitize=address")
 
-# Use pthreads
+# Installation directory
+set(EXTCAP_PATH "$ENV{HOME}/.config/wireshark/extcap")
+
+# Prefer pthreads
 set(THREADS_PREFER_PTHREAD_FLAG ON)
 find_package(Threads REQUIRED)
 
-# Generate Help-Text-Header
+# Add required dependencies
+find_package(HACKRF REQUIRED)
+find_package(BLADERF REQUIRED)
+find_package(LIQUID REQUIRED)
+find_package(BTBB REQUIRED)
+
+# Generate header for help
 add_custom_command(
   OUTPUT help.h
   COMMAND xxd -i help.txt help.h
@@ -19,6 +27,10 @@ add_custom_command(
 )
 
 include_directories(${PROJECT_SOURCE_DIR})
+include_directories(${HACKRF_INCLUDE_DIR})
+include_directories(${BLADERF_INCLUDE_DIR})
+include_directories(${LIQUID_INCLUDE_DIR})
+include_directories(${BTBB_INCLUDE_DIR})
 
 set(SOURCES
     ${PROJECT_SOURCE_DIR}/bladerf.c
@@ -39,4 +51,12 @@ add_executable(ice9-bluetooth
     ${SOURCES}
 )
 
-target_link_libraries(ice9-bluetooth PRIVATE Threads::Threads)
+target_link_libraries(ice9-bluetooth
+    PRIVATE Threads::Threads
+    ${HACKRF_LIBRARIES}
+    ${BLADERF_LIBRARIES}
+    ${LIQUID_LIBRARIES}
+    ${BTBB_LIBRARIES}
+)
+
+install(TARGETS ice9-bluetooth DESTINATION ${EXTCAP_PATH})
