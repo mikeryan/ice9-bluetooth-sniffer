@@ -3,8 +3,13 @@ project(ice9-bluetooth C)
 
 set(CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/cmake/Modules" ${CMAKE_MODULE_PATH})
 
-set(CMAKE_C_FLAGS "-Wall -g -O0 -fsanitize=address")
-set(CMAKE_EXE_LINKER_FLAGS "-fsanitize=address")
+set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -fno-common -Wall -Wextra -Wno-unused-parameter -std=c99 -Werror=implicit-function-declaration")
+
+set(CMAKE_C_FLAGS_DEBUG "-ggdb3 -g3 -O0 -fsanitize=address")
+set(CMAKE_C_FLAGS_MINSIZEREL "-Os -fsanitize=address")
+set(CMAKE_C_FLAGS_RELWITHDEBINFO "-O3 -ggdb3 -g3")
+set(CMAKE_C_FLAGS_RELEASE "-O3")
+set(CMAKE_EXE_LINKER_FLAGS_DEBUG "-fsanitize=address")
 
 # Installation directory
 set(EXTCAP_PATH "$ENV{HOME}/.config/wireshark/extcap")
@@ -25,6 +30,12 @@ add_custom_command(
   COMMAND xxd -i help.txt help.h
   DEPENDS help.txt
 )
+
+# Build RelWithDebInfo by default so builds are fast out of the box
+if(NOT CMAKE_BUILD_TYPE)
+  set(CMAKE_BUILD_TYPE "RelWithDebInfo" CACHE STRING
+      "Choose the type of build, options are: Debug Release RelWithDebInfo MinSizeRel." FORCE)
+endif(NOT CMAKE_BUILD_TYPE)
 
 include_directories(${PROJECT_SOURCE_DIR})
 include_directories(${HACKRF_INCLUDE_DIR})
