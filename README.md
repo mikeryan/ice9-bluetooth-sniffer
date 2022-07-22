@@ -22,6 +22,9 @@ packaged there, so you'll have to bring your own. For the other two:
 
 ## Building and Installing
 
+    mkdir build
+    cd build
+    cmake ..
     make
     make install
 
