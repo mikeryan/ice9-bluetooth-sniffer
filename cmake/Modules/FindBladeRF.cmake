@@ -18,6 +18,7 @@ FIND_PATH(BLADERF_INCLUDE_DIR libbladeRF.h
 FIND_LIBRARY(BLADERF_LIBRARY
         NAMES bladeRF
         PATHS ${BLADERF_DIR}/lib
+        PATH_SUFFIXES ${CMAKE_LIBRARY_ARCHITECTURE}
         "${BLADERF_DIR}\\win32\\lib"
         /opt/homebrew/lib
         /opt/local/lib

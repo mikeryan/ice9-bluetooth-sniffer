@@ -19,6 +19,7 @@ FIND_PATH(BTBB_INCLUDE_DIR btbb.h
 FIND_LIBRARY(BTBB_LIBRARY
         NAMES btbb
         PATHS ${BTBB_DIR}/lib
+        PATH_SUFFIXES ${CMAKE_LIBRARY_ARCHITECTURE}
         "${BTBB_DIR}\\win32\\lib"
         /opt/homebrew/lib
         /opt/local/lib
