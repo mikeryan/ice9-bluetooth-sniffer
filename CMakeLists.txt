@@ -26,10 +26,13 @@ find_package(BTBB REQUIRED)
 
 # Generate header for help
 add_custom_command(
-  OUTPUT help.h
+  OUTPUT "help.h"
   COMMAND xxd -i help.txt help.h
-  DEPENDS help.txt
-)
+  DEPENDS ${PROJECT_SOURCE_DIR}/help.txt
+  WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}
+  COMMENT "Generate Help Header"
+  VERBATIM)
+
 
 # Build RelWithDebInfo by default so builds are fast out of the box
 if(NOT CMAKE_BUILD_TYPE)
@@ -60,6 +63,7 @@ set(SOURCES
 
 add_executable(ice9-bluetooth
     ${SOURCES}
+    help.h
 )
 
 target_link_libraries(ice9-bluetooth

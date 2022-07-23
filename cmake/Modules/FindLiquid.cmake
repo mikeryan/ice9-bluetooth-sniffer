@@ -15,18 +15,7 @@ FIND_PATH(LIQUID_INCLUDE_DIR liquid.h
         /usr/local/include/liquid
 )
 
-FIND_LIBRARY(LIQUID_LIBRARY
-        NAMES liquid
-        PATHS ${LIQUID_DIR}/lib
-        PATH_SUFFIXES ${CMAKE_LIBRARY_ARCHITECTURE}
-        "${LIQUID_DIR}\\win32\\lib"
-        /opt/homebrew/lib
-        /opt/local/lib
-        /usr/lib64
-        /usr/lib
-        /usr/local/lib
-        NO_DEFAULT_PATH
-)
+FIND_LIBRARY(LIQUID_LIBRARY liquid)
 
 IF (LIQUID_LIBRARY AND LIQUID_INCLUDE_DIR)
     SET(LIQUID_LIBRARIES ${LIQUID_LIBRARY})

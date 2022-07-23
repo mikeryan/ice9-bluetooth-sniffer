@@ -15,18 +15,7 @@ FIND_PATH(HACKRF_INCLUDE_DIR hackrf.h
         /usr/local/include/libhackrf
 )
 
-FIND_LIBRARY(HACKRF_LIBRARY
-        NAMES hackrf
-        PATHS ${HACKRF_DIR}/lib
-        PATH_SUFFIXES ${CMAKE_LIBRARY_ARCHITECTURE}
-        "${HACKRF_DIR}\\win32\\lib"
-        /opt/homebrew/lib
-        /opt/local/lib
-        /usr/lib64
-        /usr/lib
-        /usr/local/lib
-        NO_DEFAULT_PATH
-)
+FIND_LIBRARY(HACKRF_LIBRARY hackrf)
 
 IF (HACKRF_LIBRARY AND HACKRF_INCLUDE_DIR)
     SET(HACKRF_LIBRARIES ${HACKRF_LIBRARY})

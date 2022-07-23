@@ -15,18 +15,7 @@ FIND_PATH(BLADERF_INCLUDE_DIR libbladeRF.h
         /usr/local/include
 )
 
-FIND_LIBRARY(BLADERF_LIBRARY
-        NAMES bladeRF
-        PATHS ${BLADERF_DIR}/lib
-        PATH_SUFFIXES ${CMAKE_LIBRARY_ARCHITECTURE}
-        "${BLADERF_DIR}\\win32\\lib"
-        /opt/homebrew/lib
-        /opt/local/lib
-        /usr/lib64
-        /usr/lib
-        /usr/local/lib
-        NO_DEFAULT_PATH
-)
+FIND_LIBRARY(BLADERF_LIBRARY bladeRF)
 
 IF (BLADERF_LIBRARY AND BLADERF_INCLUDE_DIR)
     SET(BLADERF_LIBRARIES ${BLADERF_LIBRARY})

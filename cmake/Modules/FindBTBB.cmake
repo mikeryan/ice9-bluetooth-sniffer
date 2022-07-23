@@ -16,18 +16,7 @@ FIND_PATH(BTBB_INCLUDE_DIR btbb.h
         /usr/local/include
 )
 
-FIND_LIBRARY(BTBB_LIBRARY
-        NAMES btbb
-        PATHS ${BTBB_DIR}/lib
-        PATH_SUFFIXES ${CMAKE_LIBRARY_ARCHITECTURE}
-        "${BTBB_DIR}\\win32\\lib"
-        /opt/homebrew/lib
-        /opt/local/lib
-        /usr/lib64
-        /usr/lib
-        /usr/local/lib
-        NO_DEFAULT_PATH
-)
+FIND_LIBRARY(BTBB_LIBRARY btbb)
 
 IF (BTBB_LIBRARY AND BTBB_INCLUDE_DIR)
     SET(BTBB_LIBRARIES ${BTBB_LIBRARY})
