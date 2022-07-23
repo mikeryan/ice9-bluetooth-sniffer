@@ -19,9 +19,9 @@ set(THREADS_PREFER_PTHREAD_FLAG ON)
 find_package(Threads REQUIRED)
 
 # Add required dependencies
-find_package(HACKRF REQUIRED)
-find_package(BLADERF REQUIRED)
-find_package(LIQUID REQUIRED)
+find_package(HackRF REQUIRED)
+find_package(BladeRF REQUIRED)
+find_package(Liquid REQUIRED)
 find_package(BTBB REQUIRED)
 
 # Generate header for help
@@ -69,6 +69,8 @@ target_link_libraries(ice9-bluetooth
     ${LIQUID_LIBRARIES}
     ${BTBB_LIBRARIES}
 )
+
+set_property(TARGET ice9-bluetooth PROPERTY C_STANDARD 99)
 
 install(TARGETS ice9-bluetooth DESTINATION ${EXTCAP_PATH})
 
