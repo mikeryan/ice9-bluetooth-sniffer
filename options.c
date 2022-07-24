@@ -14,9 +14,11 @@
 
 #include "bladerf.h"
 #include "pcap.h"
+#include "usrp.h"
 
 extern FILE *in;
 extern char *serial;
+extern char *usrp_serial;
 extern int bladerf_num;
 
 extern float samp_rate;
@@ -29,6 +31,7 @@ extern int stats;
 
 void usage(int exitcode);
 
+void usrp_list(void);
 static void _print_interfaces(void) {
     int i;
     char *s;
@@ -47,6 +50,7 @@ static void _print_interfaces(void) {
     for (i = 0; (unsigned)i < num_bladesrf; ++i)
         printf("interface {value=bladerf%i}{display=ICE9 Bluetooth}\n", bladesrf[i]);
     free(bladesrf);
+    usrp_list();
     exit(0);
 }
 
@@ -111,6 +115,8 @@ void parse_options(int argc, char **argv) {
                     serial = strdup(optarg + strlen("hackrf-"));
                 else if (strstr(optarg, "bladerf") == optarg)
                     bladerf_num = atoi(optarg + strlen("bladerf"));
+                else if (strstr(optarg, "usrp-") == optarg)
+                    usrp_serial = strdup(usrp_get_serial(optarg));
                 else
                     errx(1, "invalid interface, must start with \"hackrf-\" or \"bladerf\"");
                 break;

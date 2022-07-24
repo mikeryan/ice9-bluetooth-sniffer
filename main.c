@@ -25,6 +25,7 @@
 #include "hackrf.h"
 #include "pcap.h"
 #include "sdr.h"
+#include "usrp.h"
 
 #define C_FEK_BLOCKING_QUEUE_IMPLEMENTATION
 #define C_FEK_FAIR_LOCK_IMPLEMENTATION
@@ -41,6 +42,7 @@ char *base_name = NULL;
 int live = 0;
 FILE *in = NULL;
 char *serial = NULL;
+char *usrp_serial = NULL;
 int bladerf_num = -1;
 int verbose = 0;
 int stats = 0;
@@ -410,7 +412,8 @@ int main(int argc, char **argv) {
     // char *out_filename = NULL;
     hackrf_device *hackrf = NULL;
     struct bladerf *bladerf = NULL;
-    pthread_t bladerf_thread;
+    uhd_usrp_handle usrp = NULL;
+    pthread_t bladerf_thread, usrp_thread;
 
     signal(SIGINT, sig);
     signal(SIGTERM, sig);
@@ -426,6 +429,8 @@ int main(int argc, char **argv) {
         // TODO select first available interface
         if (bladerf_num >= 0)
             bladerf = bladerf_setup(bladerf_num);
+        else if (usrp_serial != NULL)
+            usrp = usrp_setup(usrp_serial);
         else
             hackrf = hackrf_setup();
     }
@@ -449,6 +454,8 @@ int main(int argc, char **argv) {
     if (live) {
         if (hackrf != NULL)
             hackrf_start_rx(hackrf, hackrf_rx_cb, NULL);
+        else if (usrp != NULL)
+            pthread_create(&usrp_thread, NULL, usrp_stream_thread, (void *)usrp);
         else
             pthread_create(&bladerf_thread, NULL, bladerf_stream_thread, (void *)bladerf);
     }
@@ -465,6 +472,8 @@ int main(int argc, char **argv) {
     if (live) {
         if (hackrf != NULL)
             hackrf_stop_rx(hackrf);
+        else if (usrp != NULL)
+            ; // do nothing (stream is stopped in thread)
         else
             bladerf_enable_module(bladerf, BLADERF_MODULE_RX, false);
     }
@@ -475,6 +484,9 @@ int main(int argc, char **argv) {
         if (hackrf != NULL) {
             hackrf_close(hackrf);
             hackrf_exit();
+        } else if (usrp != NULL) {
+            pthread_join(usrp_thread, NULL);
+            usrp_close(usrp);
         } else {
             pthread_join(bladerf_thread, NULL);
             bladerf_close(bladerf);
