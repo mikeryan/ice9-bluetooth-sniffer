@@ -58,6 +58,7 @@ set(SOURCES
     ${PROJECT_SOURCE_DIR}/help.c
     ${PROJECT_SOURCE_DIR}/options.c
     ${PROJECT_SOURCE_DIR}/pcap.c
+    ${PROJECT_SOURCE_DIR}/usrp.c
 
     ${PROJECT_SOURCE_DIR}/main.c
 )
