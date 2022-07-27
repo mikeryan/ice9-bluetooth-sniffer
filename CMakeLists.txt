@@ -21,6 +21,7 @@ find_package(Threads REQUIRED)
 # Add required dependencies
 find_package(HackRF REQUIRED)
 find_package(BladeRF REQUIRED)
+find_package(UHD REQUIRED)
 find_package(Liquid REQUIRED)
 find_package(BTBB REQUIRED)
 
@@ -43,6 +44,7 @@ endif(NOT CMAKE_BUILD_TYPE)
 include_directories(${PROJECT_SOURCE_DIR})
 include_directories(${HACKRF_INCLUDE_DIR})
 include_directories(${BLADERF_INCLUDE_DIR})
+include_directories(${UHD_INCLUDE_DIR})
 include_directories(${LIQUID_INCLUDE_DIR})
 include_directories(${BTBB_INCLUDE_DIR})
 
@@ -70,6 +72,7 @@ target_link_libraries(ice9-bluetooth
     PRIVATE Threads::Threads
     ${HACKRF_LIBRARIES}
     ${BLADERF_LIBRARIES}
+    ${UHD_LIBRARIES}
     ${LIQUID_LIBRARIES}
     ${BTBB_LIBRARIES}
 )
