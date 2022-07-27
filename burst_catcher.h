@@ -26,8 +26,6 @@ typedef struct _burst_t {
     // TODO timestamp or sample num?
 } burst_t;
 
-typedef struct _burst_catcher_t burst_catcher_t;
-
 void burst_catcher_create(burst_catcher_t *c, unsigned freq);
 void burst_catcher_destroy(burst_catcher_t *c);
 int burst_catcher_execute(burst_catcher_t *c, float complex *sample, burst_t *burst_out);

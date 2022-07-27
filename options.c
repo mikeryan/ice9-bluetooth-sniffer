@@ -44,7 +44,7 @@ static void _print_interfaces(void) {
     }
     hackrf_device_list_free(hackrf_devices);
     bladesrf = bladerf_list(&num_bladesrf);
-    for (i = 0; i < num_bladesrf; ++i)
+    for (i = 0; (unsigned)i < num_bladesrf; ++i)
         printf("interface {value=bladerf%i}{display=ICE9 Bluetooth}\n", bladesrf[i]);
     free(bladesrf);
     exit(0);

@@ -64,7 +64,7 @@ ble_packet_t *ble_burst(uint8_t *bits, unsigned bits_len, unsigned freq) {
             }
             unsigned bit_len = 8 + 32 + 16 + header_len * 8 + 24; // preamble + AA + header + body + CRC
             int delta = (int)bits_len - (int)bit_len;
-            if (delta > 0 && delta < smallest_delta) {
+            if (delta > 0 && (unsigned)delta < smallest_delta) {
                 smallest_delta = delta;
                 smallest_offset = i;
                 smallest_aa = aa;
