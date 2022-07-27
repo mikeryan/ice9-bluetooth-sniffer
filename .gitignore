@@ -3,3 +3,5 @@ ice9-bluetooth
 *.fc32
 *.raw
 help.h
+build/
+.vscode/

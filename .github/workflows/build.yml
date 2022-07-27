@@ -13,7 +13,13 @@ jobs:
 
     steps:
     - uses: actions/checkout@v3
+    # Install dependencies
     - name: install deps
       run: sudo apt -y install libliquid-dev libbtbb-dev libhackrf-dev libbladerf-dev
-    - name: make
-      run: make
+    # Build
+    - name: mkdir
+      run: mkdir build
+    - name: cmake build
+      run: cmake -Bbuild -H.
+    - name: cmake make
+      run: cmake --build build/ --target all
