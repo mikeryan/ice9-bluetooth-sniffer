@@ -12,6 +12,7 @@
 #include <btbb.h>
 #include <libhackrf/hackrf.h>
 
+#include "hackrf.h"
 #include "bladerf.h"
 #include "pcap.h"
 #include "usrp.h"
@@ -33,23 +34,9 @@ void usage(int exitcode);
 
 void usrp_list(void);
 static void _print_interfaces(void) {
-    int i;
-    char *s;
-    int *bladesrf;
-    unsigned num_bladesrf;
     printf("extcap {version=1.0}\n");
-    hackrf_init();
-    hackrf_device_list_t *hackrf_devices = hackrf_device_list();
-    for (i = 0; i < hackrf_devices->devicecount; ++i) {
-        for (s = hackrf_devices->serial_numbers[i]; *s == '0'; ++s)
-            ;
-        printf("interface {value=hackrf-%s}{display=ICE9 Bluetooth}\n", s);
-    }
-    hackrf_device_list_free(hackrf_devices);
-    bladesrf = bladerf_list(&num_bladesrf);
-    for (i = 0; (unsigned)i < num_bladesrf; ++i)
-        printf("interface {value=bladerf%i}{display=ICE9 Bluetooth}\n", bladesrf[i]);
-    free(bladesrf);
+    hackrf_list();
+    bladerf_list();
     usrp_list();
     exit(0);
 }

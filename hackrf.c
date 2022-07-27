@@ -5,6 +5,7 @@
 #include <err.h>
 #include <signal.h>
 #include <stdlib.h>
+#include <stdio.h>
 #include <unistd.h>
 #include <libhackrf/hackrf.h>
 
@@ -17,6 +18,19 @@ extern float samp_rate;
 extern unsigned center_freq;
 extern char *serial;
 extern sig_atomic_t running;
+
+void hackrf_list(void) {
+    int i;
+    char *s;
+    hackrf_init();
+    hackrf_device_list_t *hackrf_devices = hackrf_device_list();
+    for (i = 0; i < hackrf_devices->devicecount; ++i) {
+        for (s = hackrf_devices->serial_numbers[i]; *s == '0'; ++s)
+            ;
+        printf("interface {value=hackrf-%s}{display=ICE9 Bluetooth}\n", s);
+    }
+    hackrf_device_list_free(hackrf_devices);
+}
 
 hackrf_device *hackrf_setup(void) {
     int r;

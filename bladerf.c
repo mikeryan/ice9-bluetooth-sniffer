@@ -22,10 +22,9 @@ extern unsigned center_freq;
 
 unsigned timeouts = 0;
 
-int *bladerf_list(unsigned *num_out) {
+void bladerf_list(void) {
     struct bladerf_devinfo *devices;
     int i, num;
-    int *ret = NULL;
 
     num = bladerf_get_device_list(&devices);
     if (num == 0 || num == BLADERF_ERR_NODEV) {
@@ -35,15 +34,12 @@ int *bladerf_list(unsigned *num_out) {
     if (num < 0)
         errx(1, "Unable to get bladeRF device list: %s", bladerf_strerror(num));
 
-    ret = malloc(sizeof(*ret) * num);
     for (i = 0; i < num; ++i)
-        ret[i] = devices[i].instance;
+        printf("interface {value=bladerf%i}{display=ICE9 Bluetooth}\n", devices[i].instance);
 
 out:
     if (num != 0)
         bladerf_free_device_list(devices);
-    *num_out = num;
-    return ret;
 }
 
 struct bladerf *bladerf_setup(int id) {

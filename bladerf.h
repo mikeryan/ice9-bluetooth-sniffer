@@ -7,7 +7,7 @@
 
 #include <libbladeRF.h>
 
-int *bladerf_list(unsigned *num_out);
+void bladerf_list(void);
 struct bladerf *bladerf_setup(int id);
 void *bladerf_stream_thread(void *arg);
 
