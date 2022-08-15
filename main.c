@@ -15,11 +15,11 @@
 #include <time.h>
 #include <unistd.h>
 
-#include <btbb.h>
 #include <liquid/liquid.h>
 
 #include "bladerf.h"
 #include "bluetooth.h"
+#include "btbb/btbb.h"
 #include "burst_catcher.h"
 #include "fsk.h"
 #include "hackrf.h"
@@ -434,7 +434,7 @@ int main(int argc, char **argv) {
         else
             hackrf = hackrf_setup();
     }
-    btbb_init(1);
+    gen_syndrome_map(1);
 
     unsigned h_len = 2*channels*m + 1;
     float *h = malloc(sizeof(float) * h_len);

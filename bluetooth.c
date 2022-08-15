@@ -7,9 +7,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-#include <btbb.h>
-
 #include "bluetooth.h"
+#include "btbb/btbb.h"
 #include "pcap.h"
 
 extern pcap_t *pcap;
@@ -99,15 +98,9 @@ ble_packet_t *ble_burst(uint8_t *bits, unsigned bits_len, unsigned freq) {
 }
 
 void bluetooth_detect(uint8_t *bits, unsigned len, unsigned freq, uint32_t *lap_out, uint32_t *aa_out) {
-    btbb_packet *p = NULL;
-    int r = btbb_find_ac((char *)bits, len, LAP_ANY, 1, &p);
-    if (r >= 0) {
-        *lap_out = btbb_packet_get_lap(p);
-        /*
-        btbb_packet_set_data(p, (char *)bits + r, len - r, 0, 0); // TODO channel
-        r = btbb_decode(p);
-        */
-        btbb_packet_unref(p);
+    uint32_t lap = btbb_find_ac((char *)bits, len, 1);
+    if (lap != 0xffffffff) {
+        *lap_out = lap;
     } else {
         ble_packet_t * p = ble_burst(bits, len, freq);
         if (p != NULL) {

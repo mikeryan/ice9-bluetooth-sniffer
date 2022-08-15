@@ -9,7 +9,6 @@
 #include <string.h>
 #include <unistd.h>
 
-#include <btbb.h>
 #include <libhackrf/hackrf.h>
 
 #include "hackrf.h"

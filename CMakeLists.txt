@@ -23,7 +23,6 @@ find_package(HackRF REQUIRED)
 find_package(BladeRF REQUIRED)
 find_package(UHD REQUIRED)
 find_package(Liquid REQUIRED)
-find_package(BTBB REQUIRED)
 
 # Generate header for help
 add_custom_command(
@@ -51,6 +50,7 @@ include_directories(${BTBB_INCLUDE_DIR})
 set(SOURCES
     ${PROJECT_SOURCE_DIR}/bladerf.c
     ${PROJECT_SOURCE_DIR}/bluetooth.c
+    ${PROJECT_SOURCE_DIR}/btbb/btbb.c
     ${PROJECT_SOURCE_DIR}/burst_catcher.c
     ${PROJECT_SOURCE_DIR}/fsk.c
     ${PROJECT_SOURCE_DIR}/hackrf.c
