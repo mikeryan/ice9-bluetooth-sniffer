@@ -5,6 +5,8 @@
 #ifndef __BURST_CATCHER_H__
 #define __BURST_CATCHER_H__
 
+#include <time.h>
+
 #include "fsk.h"
 
 // burst processing, one per channel
@@ -15,6 +17,7 @@ typedef struct _burst_catcher_t {
     unsigned burst_len;
     unsigned burst_buf_size;
     unsigned burst_num;
+    struct timespec timestamp;
 } burst_catcher_t;
 
 typedef struct _burst_t {
@@ -23,7 +26,7 @@ typedef struct _burst_t {
     unsigned freq;
     packet_t packet;
     unsigned num;
-    // TODO timestamp or sample num?
+    struct timespec timestamp;
 } burst_t;
 
 void burst_catcher_create(burst_catcher_t *c, unsigned freq);

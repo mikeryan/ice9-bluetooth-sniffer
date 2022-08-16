@@ -47,11 +47,13 @@ int burst_catcher_execute(burst_catcher_t *c, float complex *sample, burst_t *bu
         c->burst = malloc(sizeof(float complex) * BURST_START_SIZE);
         c->burst_buf_size = BURST_START_SIZE;
         c->burst_len = 0;
+        clock_gettime(CLOCK_REALTIME, &c->timestamp);
     } else if (agc_crcf_squelch_get_status(c->agc) == LIQUID_AGC_SQUELCH_TIMEOUT) {
         burst_out->burst = c->burst;
         burst_out->len = c->burst_len;
         burst_out->num = c->burst_num;
         burst_out->freq = c->freq;
+        burst_out->timestamp = c->timestamp;
         c->burst = NULL;
         c->burst_len = 0;
         c->burst_buf_size = 0;

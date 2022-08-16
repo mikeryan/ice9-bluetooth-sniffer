@@ -77,6 +77,8 @@ void pcap_write_ble(pcap_t *p, ble_packet_t *b) {
         .flags = LE_DEWHITENED,
     };
     pcaprec_hdr_t pcap_header = {
+        .ts_sec   = b->timestamp.tv_sec,
+        .ts_usec  = b->timestamp.tv_nsec/1000,
         .incl_len = b->len + sizeof(le_header),
         .orig_len = b->len + sizeof(le_header),
     };
