@@ -1,24 +1,23 @@
 # ICE9 Bluetooth Sniffer
 
-Bluetooth sniffer for Wireshark and HackRF that can listen to between 4
-and 20 channels simultaneously.
+Bluetooth sniffer for Wireshark and HackRF, BladeRF, and USRP that can
+listen to between 4 and 40 channels simultaneously.
 
 ## Dependencies
 
-This tool requires libliquid, libhackrf, libbladerf, and libbtbb. On
+This tool requires libliquid, libhackrf, libbladerf, and libuhd. On
 Debian-based systems you can install these using:
 
-    sudo apt install libliquid-dev libhackrf-dev libbladerf-dev libbtbb-dev
+    sudo apt install libliquid-dev libhackrf-dev libbladerf-dev libuhd-dev
 
 On macOS, [Homebrew](https://brew.sh/) is the recommended package
 manager:
 
-    brew install liquid-dsp hackrf libbladerf libbtbb
+    brew install liquid-dsp hackrf libbladerf uhd
 
-This code is untested against MacPorts. libbtbb does not appear to be
-packaged there, so you'll have to bring your own. For the other two:
+This code is untested against MacPorts. The deps can be installed with:
 
-    port install liquid-dsp hackrf bladeRF
+    port install liquid-dsp hackrf bladeRF uhd
 
 ## Building and Installing
 
