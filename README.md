@@ -31,6 +31,8 @@ The `install` target will copy the binary into
 `$HOME/.config/wireshark/extcap`. An `uninstall` target is also provided
 as a convenience.
 
+If you want to install the module to a custom directory, set `EXTCAP_INSTALL_PATH` when running `cmake`.
+
 ## Running
 
 This tool is primarily meant to be run from within Wireshark. That said,

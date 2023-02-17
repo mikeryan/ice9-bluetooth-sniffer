@@ -12,7 +12,11 @@ set(CMAKE_C_FLAGS_RELEASE "-O3")
 set(CMAKE_EXE_LINKER_FLAGS_DEBUG "-fsanitize=address")
 
 # Installation directory
-set(EXTCAP_PATH "$ENV{HOME}/.config/wireshark/extcap")
+set(EXTCAP_PATH $ENV{EXTCAP_INSTALL_PATH})
+if(EXTCAP_PATH)
+else()
+  set(EXTCAP_PATH "$ENV{HOME}/.config/wireshark/extcap")
+endif()
 
 # Prefer pthreads
 set(THREADS_PREFER_PTHREAD_FLAG ON)
