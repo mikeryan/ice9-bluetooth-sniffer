@@ -40,7 +40,7 @@ it is fully operable from the command line. Refer to the [usage
 notes](help.txt) for full details. For a brief overview, to capture 20
 channels centered on 2427 MHz and log all BLE traffic to a PCAP file:
 
-    ./ice9-bluetooth-sniffer -c 2427 -C 20 -w ble.pcap
+    ./ice9-bluetooth -l -c 2427 -C 20 -w ble.pcap
 
 For performance stats, add `-s`. For low-level details and info about
 classic Bluetooth packets, add `-v`.
@@ -59,7 +59,7 @@ and remove `-fsanitize=address`.
 There isn't a proper benchmark mode as such, but you can try
 demodulating a bunch of `0x00` bytes like so:
 
-    ./ice9-bluetooth-sniffer -f /dev/zero -s -C 20
+    ./ice9-bluetooth -f /dev/zero -s -C 20
 
 The channelizer will most likely be the bottleneck. Start with 20
 channels and observe the performance relative to real time. If it is not
