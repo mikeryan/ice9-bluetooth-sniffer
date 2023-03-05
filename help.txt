@@ -1,5 +1,5 @@
 Usage: ice9-bluetooth <-f <file.fc32> | -l> -c <center-freq> -C <chan>
-Captures Bluetooth packets using a HackRF SDR.
+Captures Bluetooth packets using a HackRF, bladeRF, or USRP SDR.
 
 Mandatory arguments:
     -f, --file=FILE         read input from fc32 file (cfile)
@@ -11,7 +11,7 @@ Optional arguments:
     -w, --fifo=OUTPUT       output pcap to OUTPUT (may be a pcap file or FIFO)
     -s, --stats             print performance stats periodically
     -v, --verbose           print detailed info about captured bursts
-    -i IFACE                which HackRF to use, example: hackrf-1234abcd
+    -i IFACE                which SDR to use, example: hackrf-1234abcd
 
 This tool also supports the Wireshark extcap interface:
     ice-bluetooth --extcap-interfaces
