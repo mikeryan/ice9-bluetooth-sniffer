@@ -114,7 +114,7 @@ char *usrp_get_serial(char *name) {
     char *dash;
     if (strncmp(name, "usrp-", 5) != 0)
         return NULL;
-    dash = strchr(name + 5, '-');
+    dash = strchr(name, '-');
     if (dash == NULL)
         return NULL;
     return dash + 1; // skip the dash
