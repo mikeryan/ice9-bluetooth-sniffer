@@ -21,6 +21,7 @@ extern float samp_rate;
 extern unsigned center_freq;
 
 unsigned timeouts = 0;
+int num_samples_workaround = 0;
 
 void bladerf_list(void) {
     struct bladerf_devinfo *devices;
@@ -43,16 +44,23 @@ out:
 }
 
 struct bladerf *bladerf_setup(int id) {
+    struct bladerf_version version;
     int status;
     char identifier[32];
     struct bladerf *bladerf = NULL;
     snprintf(identifier, sizeof(identifier), "*:instance=%d", id);
 
+    bladerf_version(&version);
+    if (version.major == 2 && version.minor == 5 && version.patch == 0)
+        num_samples_workaround = 1;
+
     bladerf_set_usb_reset_on_open(true);
     if ((status = bladerf_open(&bladerf, identifier)) != 0)
         errx(1, "Unable to open bladeRF: %s", bladerf_strerror(status));
-    if ((status = bladerf_set_sample_rate(bladerf, BLADERF_CHANNEL_RX(0), samp_rate, NULL)) != 0)
-        errx(1, "Unable to set bladeRF sample rate: %s", bladerf_strerror(status));
+
+    if ((status = bladerf_enable_feature(bladerf, BLADERF_FEATURE_OVERSAMPLE, true)) != 0)
+        errx(1, "Unable to set bladeRF to oversample mode: %s", bladerf_strerror(status));
+
     // TODO bandwidth
     if ((status = bladerf_set_frequency(bladerf, BLADERF_CHANNEL_RX(0), center_freq * 1e6)) != 0)
         errx(1, "Unable to set bladeRF center frequency: %s", bladerf_strerror(status));
@@ -71,14 +79,16 @@ struct bladerf *bladerf_setup(int id) {
 
 void *bladerf_rx_cb(struct bladerf *bladerf, struct bladerf_stream *stream, struct bladerf_metadata *meta, void *samples, size_t num_samples, void *user_data) {
     unsigned i;
-    int16_t *d = (int16_t *)samples;
+    int8_t *d = (int8_t *)samples;
 
     timeouts = 0;
+    if (num_samples_workaround) // see https://github.com/Nuand/bladeRF/pull/916
+        num_samples *= 2;
 
     sample_buf_t *s = malloc(sizeof(*s) + num_samples * sizeof(float complex));
     s->num = num_samples;
     for (i = 0; i < num_samples; ++i)
-        s->samples[i] = d[2*i] / 2048.0f + d[2*i+1] / 2048.0f * I;
+        s->samples[i] = d[2*i] / 256.0f + d[2*i+1] / 256.0f * I;
 
     if (running)
         push_samples(s);
@@ -91,12 +101,17 @@ void *bladerf_rx_cb(struct bladerf *bladerf, struct bladerf_stream *stream, stru
 void *bladerf_stream_thread(void *arg) {
     struct bladerf *bladerf = (struct bladerf *)arg;
     struct bladerf_stream *stream;
+    struct bladerf_rational_rate rate = { .integer = samp_rate };
     void **buffers = NULL;
     unsigned timeout;
     int status;
 
-    if ((status = bladerf_init_stream(&stream, bladerf, bladerf_rx_cb, &buffers, num_transfers, BLADERF_FORMAT_SC16_Q11, channels / 2 * 4096, num_transfers, NULL)) != 0)
+    if ((status = bladerf_init_stream(&stream, bladerf, bladerf_rx_cb, &buffers, num_transfers, BLADERF_FORMAT_SC8_Q7, channels / 2 * 4096, num_transfers, NULL)) != 0)
         errx(1, "Unable to initialize bladeRF stream: %s", bladerf_strerror(status));
+
+    // must occur after the change to 8 bit samples
+    if ((status = bladerf_set_rational_sample_rate(bladerf, BLADERF_CHANNEL_RX(0), &rate, NULL)) != 0)
+        errx(1, "Unable to set bladeRF sample rate: %s", bladerf_strerror(status));
 
     // FIXME get the 4096 out of here
     timeout = 1000 * channels / 2 * 4096 / samp_rate;
