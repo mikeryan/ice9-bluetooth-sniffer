@@ -101,7 +101,7 @@ void *bladerf_rx_cb(struct bladerf *bladerf, struct bladerf_stream *stream, stru
 void *bladerf_stream_thread(void *arg) {
     struct bladerf *bladerf = (struct bladerf *)arg;
     struct bladerf_stream *stream;
-    struct bladerf_rational_rate rate = { .integer = samp_rate };
+    struct bladerf_rational_rate rate = { .integer = samp_rate, .num = 0, .den = 1 };
     void **buffers = NULL;
     unsigned timeout;
     int status;
