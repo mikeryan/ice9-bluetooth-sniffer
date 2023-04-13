@@ -23,6 +23,10 @@ extern unsigned center_freq;
 unsigned timeouts = 0;
 int num_samples_workaround = 0;
 
+#if defined(LIBBLADERF_API_VERSION) && (LIBBLADERF_API_VERSION >= 0x02050000)
+#define BLADERF_OVERSAMPLE
+#endif
+
 void bladerf_list(void) {
     struct bladerf_devinfo *devices;
     int i, num;
@@ -58,8 +62,10 @@ struct bladerf *bladerf_setup(int id) {
     if ((status = bladerf_open(&bladerf, identifier)) != 0)
         errx(1, "Unable to open bladeRF: %s", bladerf_strerror(status));
 
+#ifdef BLADERF_OVERSAMPLE
     if ((status = bladerf_enable_feature(bladerf, BLADERF_FEATURE_OVERSAMPLE, true)) != 0)
         errx(1, "Unable to set bladeRF to oversample mode: %s", bladerf_strerror(status));
+#endif
 
     // TODO bandwidth
     if ((status = bladerf_set_frequency(bladerf, BLADERF_CHANNEL_RX(0), center_freq * 1e6)) != 0)
@@ -79,7 +85,11 @@ struct bladerf *bladerf_setup(int id) {
 
 void *bladerf_rx_cb(struct bladerf *bladerf, struct bladerf_stream *stream, struct bladerf_metadata *meta, void *samples, size_t num_samples, void *user_data) {
     unsigned i;
+#ifdef BLADERF_OVERSAMPLE
     int8_t *d = (int8_t *)samples;
+#else
+    int16_t *d = (int16_t *)samples;
+#endif
 
     timeouts = 0;
     if (num_samples_workaround) // see https://github.com/Nuand/bladeRF/pull/916
@@ -88,7 +98,11 @@ void *bladerf_rx_cb(struct bladerf *bladerf, struct bladerf_stream *stream, stru
     sample_buf_t *s = malloc(sizeof(*s) + num_samples * sizeof(float complex));
     s->num = num_samples;
     for (i = 0; i < num_samples; ++i)
+#ifdef BLADERF_OVERSAMPLE
         s->samples[i] = d[2*i] / 256.0f + d[2*i+1] / 256.0f * I;
+#else
+        s->samples[i] = d[2*i] / 2048.0f + d[2*i+1] / 2048.0f * I;
+#endif
 
     if (running)
         push_samples(s);
@@ -106,7 +120,11 @@ void *bladerf_stream_thread(void *arg) {
     unsigned timeout;
     int status;
 
+#ifdef BLADERF_OVERSAMPLE
     if ((status = bladerf_init_stream(&stream, bladerf, bladerf_rx_cb, &buffers, num_transfers, BLADERF_FORMAT_SC8_Q7, channels / 2 * 4096, num_transfers, NULL)) != 0)
+#else
+    if ((status = bladerf_init_stream(&stream, bladerf, bladerf_rx_cb, &buffers, num_transfers, BLADERF_FORMAT_SC16_Q11, channels / 2 * 4096, num_transfers, NULL)) != 0)
+#endif
         errx(1, "Unable to initialize bladeRF stream: %s", bladerf_strerror(status));
 
     // must occur after the change to 8 bit samples
