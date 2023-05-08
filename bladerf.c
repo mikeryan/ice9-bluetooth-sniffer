@@ -95,11 +95,11 @@ void *bladerf_rx_cb(struct bladerf *bladerf, struct bladerf_stream *stream, stru
     if (num_samples_workaround) // see https://github.com/Nuand/bladeRF/pull/916
         num_samples *= 2;
 
-    sample_buf_t *s = malloc(sizeof(*s) + num_samples * sizeof(float complex));
+    sample_buf_t *s = malloc(sizeof(*s) + num_samples * sizeof(int8_t) * 2);
     s->num = num_samples;
-    for (i = 0; i < num_samples; ++i)
+    for (i = 0; i < num_samples * 2; ++i)
 #ifdef BLADERF_OVERSAMPLE
-        s->samples[i] = d[2*i] / 256.0f + d[2*i+1] / 256.0f * I;
+        s->samples[i] = d[i];
 #else
         s->samples[i] = d[2*i] / 2048.0f + d[2*i+1] / 2048.0f * I;
 #endif

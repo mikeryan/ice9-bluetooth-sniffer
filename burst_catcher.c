@@ -6,6 +6,7 @@
 #include <string.h>
 #include <stdlib.h>
 
+#pragma clang diagnostic ignored "-Wdeprecated-declarations"
 #include <liquid/liquid.h>
 
 #include "burst_catcher.h"
@@ -15,6 +16,8 @@ const float bt = 0.25f; // agc bandwidth
 
 // starting size of burst buffer in floats
 #define BURST_START_SIZE 2048
+
+#define MAX_BURST_SIZE 32768
 
 void burst_catcher_create(burst_catcher_t *c, unsigned freq) {
     memset(c, 0, sizeof(*c));
@@ -38,11 +41,12 @@ void burst_catcher_destroy(burst_catcher_t *c) {
 int burst_catcher_execute(burst_catcher_t *c, float complex *sample, burst_t *burst_out) {
     agc_crcf_execute(c->agc, *sample, sample);
     if (agc_crcf_squelch_get_status(c->agc) == LIQUID_AGC_SQUELCH_SIGNALHI) {
-        if (c->burst_len == c->burst_buf_size) {
+        if (c->burst_len == c->burst_buf_size && c->burst_len < MAX_BURST_SIZE) {
             c->burst_buf_size *= 2;
             c->burst = realloc(c->burst, sizeof(float complex) * c->burst_buf_size);
         }
-        c->burst[c->burst_len++] = *sample;
+        if (c->burst_len < MAX_BURST_SIZE)
+            c->burst[c->burst_len++] = *sample;
     } else if (agc_crcf_squelch_get_status(c->agc) == LIQUID_AGC_SQUELCH_RISE) {
         c->burst = malloc(sizeof(float complex) * BURST_START_SIZE);
         c->burst_buf_size = BURST_START_SIZE;

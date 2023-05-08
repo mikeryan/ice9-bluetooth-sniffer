@@ -5,11 +5,11 @@
 #ifndef __SDR_H__
 #define __SDR_H__
 
-#include <complex.h>
+#include <stdint.h>
 
 typedef struct _sample_buf_t {
     unsigned num;
-    float complex samples[];
+    int8_t samples[];
 } sample_buf_t;
 
 void push_samples(sample_buf_t *buf);

@@ -3,6 +3,14 @@
 Bluetooth sniffer for Wireshark and HackRF, BladeRF, and USRP that can
 listen to between 4 and 40 channels simultaneously.
 
+## M1 VkFFT Preview
+
+This is a preview branch that showcases real-time performance sniffing
+all 40 BLE channels on an M1/M2 Mac using a bladeRF. This version only
+runs on macOS, only supports bladeRF, and is fixed to 96 channels
+centered at 2441 MHz. It reliably segfaults on exit, but it should be
+harmless.
+
 ## Dependencies
 
 This tool requires libliquid, libhackrf, libbladerf, and libuhd. On

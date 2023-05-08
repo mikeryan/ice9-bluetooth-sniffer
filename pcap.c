@@ -85,4 +85,5 @@ void pcap_write_ble(pcap_t *p, ble_packet_t *b) {
     fwrite(&pcap_header, sizeof(pcap_header), 1, p->f);
     fwrite(&le_header, sizeof(le_header), 1, p->f);
     fwrite(b->data, b->len, 1, p->f);
+    fflush(p->f);
 }

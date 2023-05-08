@@ -119,11 +119,13 @@ void parse_options(int argc, char **argv) {
                 break;
 
             case 'C':
-                channels = atoi(optarg);
+                warnx("channels fixed to 96");
+                // channels = atoi(optarg);
                 break;
 
             case 'c':
-                center_freq = atoi(optarg);
+                warnx("center freq fixed to 2441");
+                // center_freq = atoi(optarg);
                 break;
 
             case 'v':
@@ -161,8 +163,8 @@ void parse_options(int argc, char **argv) {
         errx(1, "center freq is required");
     if (center_freq < 2400 || center_freq > 2480)
         errx(1, "invalid center freq");
-    if (channels < 4 || channels > 40 || (channels % 4) != 0)
-        errx(1, "invalid channels, must be between 4 and 40 and divisible by 4");
+    if (channels < 4 || channels > 96 || (channels % 4) != 0)
+        errx(1, "invalid channels, must be between 4 and 96 and divisible by 4");
     samp_rate = channels * 1e6;
     if (do_capture)
         live = 1;

@@ -7,6 +7,7 @@
 #include <stdlib.h>
 #include <string.h>
 
+#pragma clang diagnostic ignored "-Wdeprecated-declarations"
 #include <liquid/liquid.h>
 
 #include "fsk.h"

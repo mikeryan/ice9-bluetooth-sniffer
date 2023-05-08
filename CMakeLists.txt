@@ -1,5 +1,7 @@
 cmake_minimum_required(VERSION 3.1)
-project(ice9-bluetooth C)
+project(ice9-bluetooth)
+
+set (CMAKE_CXX_STANDARD 17)
 
 set(CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/cmake/Modules" ${CMAKE_MODULE_PATH})
 
@@ -10,6 +12,10 @@ set(CMAKE_C_FLAGS_MINSIZEREL "-Os -fsanitize=address")
 set(CMAKE_C_FLAGS_RELWITHDEBINFO "-O3 -ggdb3 -g3")
 set(CMAKE_C_FLAGS_RELEASE "-O3")
 set(CMAKE_EXE_LINKER_FLAGS_DEBUG "-fsanitize=address")
+
+option(USE_VKFFT "Should VkFFT (GPU Acceleration) be used?" ON)
+
+include(FetchContent)
 
 # Installation directory
 set(EXTCAP_INSTALL_PATH $ENV{EXTCAP_INSTALL_PATH})
@@ -63,6 +69,11 @@ set(SOURCES
     ${PROJECT_SOURCE_DIR}/options.c
     ${PROJECT_SOURCE_DIR}/pcap.c
     ${PROJECT_SOURCE_DIR}/usrp.c
+    # TODO make conditional
+    ${PROJECT_SOURCE_DIR}/vkfft/fft.cc
+
+    ${PROJECT_SOURCE_DIR}/pfbch2.c
+    ${PROJECT_SOURCE_DIR}/window.c
 
     ${PROJECT_SOURCE_DIR}/main.c
 )
@@ -73,6 +84,20 @@ add_executable(ice9-bluetooth
     help.h
 )
 
+if(USE_VKFFT)
+  include_directories("vkfft")
+  set(VKFFT_BACKEND 5 CACHE STRING "5 - Metal")
+  add_definitions(-DVKFFT_BACKEND=${VKFFT_BACKEND})
+
+  if(${VKFFT_BACKEND} EQUAL 5)
+    add_compile_options(-WMTL_IGNORE_WARNINGS)
+    find_library(FOUNDATION_LIB Foundation REQUIRED)
+    find_library(QUARTZ_CORE_LIB QuartzCore REQUIRED)	
+    find_library(METAL_LIB Metal REQUIRED)
+    target_include_directories(${PROJECT_NAME} PUBLIC "metal-cpp/")
+  endif()
+endif(USE_VKFFT)
+
 target_link_libraries(ice9-bluetooth
     PRIVATE Threads::Threads
     ${HACKRF_LIBRARIES}
@@ -80,6 +105,8 @@ target_link_libraries(ice9-bluetooth
     ${UHD_LIBRARIES}
     ${LIQUID_LIBRARIES}
     ${BTBB_LIBRARIES}
+    # TODO make conditional
+    ${FOUNDATION_LIB} ${QUARTZ_CORE_LIB} ${METAL_LIB}
 )
 
 set_property(TARGET ice9-bluetooth PROPERTY C_STANDARD 99)
