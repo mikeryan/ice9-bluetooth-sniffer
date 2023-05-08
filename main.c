@@ -106,8 +106,8 @@ void pfbch_execute_block(int8_t *samples) {
         buf = get_next_buffer();
 
     pfbch2_execute(&magic, samples, out);
-    for (i = 0; i < channels; ++i)
-        buf[channels * buf_pos + i] = out[2*i] / 32768.f + out[2*i + 1] / 32768.f * I;
+    for (i = 0; i < 96; ++i)
+        buf[96 * buf_pos + i] = out[2*i] / 32768.f + out[2*i + 1] / 32768.f * I;
 
     if (++buf_pos == BATCH_SIZE) {
         buf = get_next_buffer();
