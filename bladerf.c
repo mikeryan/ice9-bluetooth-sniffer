@@ -67,7 +67,9 @@ struct bladerf *bladerf_setup(int id) {
         errx(1, "Unable to set bladeRF to oversample mode: %s", bladerf_strerror(status));
 #endif
 
-    // TODO bandwidth
+    // TODO adjust bw based on capture rate
+    if ((status = bladerf_set_bandwidth(bladerf, BLADERF_CHANNEL_RX(0), 56000000, NULL)) != 0)
+        errx(1, "Unable to set bladeRF bandwidth: %s", bladerf_strerror(status));
     if ((status = bladerf_set_frequency(bladerf, BLADERF_CHANNEL_RX(0), center_freq * 1e6)) != 0)
         errx(1, "Unable to set bladeRF center frequency: %s", bladerf_strerror(status));
     if ((status = bladerf_set_gain_mode(bladerf, BLADERF_CHANNEL_RX(0), BLADERF_GAIN_MGC)) != 0)
