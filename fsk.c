@@ -50,7 +50,7 @@ static int cfo_median(fsk_demod_t *fsk, float *demod, unsigned burst_len, float 
 
     // find the median of the positive and negative points
     for (i = 8; i < 8 + median_size(); ++i) {
-        if (fabs(demod[i]) > max_freq_offset)
+        if (fabsf(demod[i]) > max_freq_offset)
             return 0;
         if (demod[i] > 0)
             fsk->pos_points[pos_count++] = demod[i];
@@ -73,14 +73,31 @@ static int cfo_median(fsk_demod_t *fsk, float *demod, unsigned burst_len, float 
     return 1;
 }
 
-// FIXME move all these constants to the top of the file
+#define ALPHA 0.8f
+float comp_ewma(float ewma, float sample) {
+    return ALPHA * sample + (1 - ALPHA) * ewma;
+}
+
 unsigned silence_skip(float *demod, unsigned burst_len) {
+    unsigned i;
+    float ewma = 0.f;
+
+    for (i = 0; i < burst_len; ++i) {
+        ewma = comp_ewma(ewma, fabsf(demod[i]));
+        if (ewma > 0.5)
+            return i - 1;
+    }
+    return 0;
+}
+
+// FIXME move all these constants to the top of the file
+unsigned silence_skip_old(float *demod, unsigned burst_len) {
     unsigned i;
     float first_samples[8];
 
     for (i = 0; i < 8; ++i)
         // skip the first sample because it tends to be wild
-        first_samples[i] = demod[i+1];
+        first_samples[i] = fabsf(demod[i+1]);
 
     qsort(first_samples, 8, sizeof(float), compare_floats);
     if (first_samples[6] > 0.4) return 0;
