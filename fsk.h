@@ -7,7 +7,7 @@
 
 typedef struct _fsk_demod_t {
     freqdem f;
-    symsync_crcf s;
+    symsync_rrrf s;
     float *pos_points;
     float *neg_points;
 } fsk_demod_t;
