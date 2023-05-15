@@ -68,15 +68,17 @@ set(SOURCES
     ${PROJECT_SOURCE_DIR}/options.c
     ${PROJECT_SOURCE_DIR}/pcap.c
     ${PROJECT_SOURCE_DIR}/usrp.c
-    # TODO make conditional
-    ${PROJECT_SOURCE_DIR}/vkfft/fft.cc
-
     ${PROJECT_SOURCE_DIR}/pfbch2.c
     ${PROJECT_SOURCE_DIR}/window.c
 
     ${PROJECT_SOURCE_DIR}/main.c
 )
 
+if(USE_VKFFT)
+    list(APPEND SOURCES ${PROJECT_SOURCE_DIR}/vkfft/fft.cc)
+else()
+    list(APPEND SOURCES ${PROJECT_SOURCE_DIR}/fftw/fft.c)
+endif()
 
 add_executable(ice9-bluetooth
     ${SOURCES}
@@ -93,9 +95,17 @@ if(USE_VKFFT)
     find_library(FOUNDATION_LIB Foundation REQUIRED)
     find_library(QUARTZ_CORE_LIB QuartzCore REQUIRED)	
     find_library(METAL_LIB Metal REQUIRED)
+    target_link_libraries(ice9-bluetooth PRIVATE
+      ${FOUNDATION_LIB} ${QUARTZ_CORE_LIB} ${METAL_LIB})
     target_include_directories(${PROJECT_NAME} PUBLIC "metal-cpp/")
   endif()
-endif(USE_VKFFT)
+else()
+  include_directories("fftw")
+  add_definitions(-DUSE_FFTW)
+  find_package(FFTW REQUIRED)
+  target_link_libraries(ice9-bluetooth PRIVATE FFTW::Float)
+  include_directories(${FFTW_INCLUDE_DIR})
+endif()
 
 target_link_libraries(ice9-bluetooth
     PRIVATE Threads::Threads
@@ -103,8 +113,6 @@ target_link_libraries(ice9-bluetooth
     ${BLADERF_LIBRARIES}
     ${UHD_LIBRARIES}
     ${LIQUID_LIBRARIES}
-    # TODO make conditional
-    ${FOUNDATION_LIB} ${QUARTZ_CORE_LIB} ${METAL_LIB}
 )
 
 set_property(TARGET ice9-bluetooth PROPERTY C_STANDARD 99)

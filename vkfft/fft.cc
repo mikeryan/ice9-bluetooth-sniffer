@@ -88,7 +88,7 @@ VkFFTResult init_fft(fft_t *f, unsigned width, unsigned batch_size, MTL::Device 
     return resFFT;
 }
 
-VkFFTResult init_vkfft(unsigned width, unsigned batch_size) {
+VkFFTResult init_fft(unsigned width, unsigned batch_size) {
     NS::Array* devices = MTL::CopyAllDevices();
     MTL::Device* device = (MTL::Device*)devices->object(0);
     VkFFTResult r;

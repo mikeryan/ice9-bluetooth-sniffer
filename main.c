@@ -70,7 +70,11 @@ unsigned agc_live_size = 0, agc_dead_size = 0;
 agc_buffer_t *agc_buffers;
 unsigned live_buf = 0;
 
+#ifdef USE_FFTW
+pthread_t fft_thread;
+#else
 pthread_t agc_dispatcher;
+#endif
 pthread_mutex_t agc_dispatch_mutex;
 pthread_cond_t fft_done_cond;
 pthread_cond_t dispatch_done_cond;
@@ -148,11 +152,58 @@ void fft_done(void *f, void *out) {
     pthread_mutex_unlock(&agc_dispatch_mutex);
 }
 
-void *agc_dispatcher_thread(void *arg) {
+void agc_submit(float complex *fft_out) {
     const unsigned avg_count = 100;
     static unsigned long sum = 0;
     static unsigned sum_count = 0;
     unsigned i, j;
+
+    for (i = 0; i < channels; ++i)
+        for (j = 0; j < BATCH_SIZE; ++j)
+            agc_live[i].buffer[j] = fft_out[j * channels + i] / (float)channels;
+
+    if (stats) {
+        unsigned long now = now_us();
+        ch_sum += now - ch_start;
+        ch_start = now;
+    }
+
+    pthread_mutex_lock(&agc_buf_mutex);
+    while (running && agc_dead != NULL)
+        pthread_cond_wait(&agc_buf_done, &agc_buf_mutex);
+    if (!running) {
+        pthread_mutex_unlock(&agc_buf_mutex);
+        pthread_exit(NULL);
+    }
+
+    agc_dead = agc_live;
+    agc_dead_size = BATCH_SIZE; //agc_live_size;
+    live_buf = 1 - live_buf;
+    agc_live = &agc_buffers[channels * live_buf];
+    agc_live_size = 0;
+    pthread_cond_broadcast(&agc_buf_ready);
+    pthread_mutex_unlock(&agc_buf_mutex);
+
+    if (stats) {
+        sum += agc_end - agc_start;
+        if (++sum_count == avg_count) {
+            double eff_samp_rate = 40 * AGC_BUFFER_SIZE * avg_count * 2e6 / sum;
+            double rel_rate = eff_samp_rate / ((channels-2) * 2e6);
+            double ch_samp_rate = AGC_BUFFER_SIZE * channels / 2 * avg_count * 1e6 / ch_sum;
+            double ch_rel_rate = ch_samp_rate / samp_rate;
+            printf("agc %'11.0f samp/sec (%5.0f%% realtime); ch %'11.0f samp/sec (%5.0f%% realtime)\n", eff_samp_rate, 100.0 * rel_rate, ch_samp_rate, 100 * ch_rel_rate);
+            if (rel_rate < 0.99)
+                printf("AGC is too slow, use fewer channels\n");
+            if (ch_rel_rate < 0.99)
+                printf("Channelizer too slow, use fewer channels\n");
+            sum_count = sum = ch_sum = 0;
+        }
+        agc_start = now_us();
+    }
+}
+
+#ifndef USE_FFTW
+void *agc_dispatcher_thread(void *arg) {
     static float complex my_fft[96 * BATCH_SIZE];
 
     while (running) {
@@ -169,51 +220,11 @@ void *agc_dispatcher_thread(void *arg) {
         pthread_cond_signal(&dispatch_done_cond);
         pthread_mutex_unlock(&agc_dispatch_mutex);
 
-        for (i = 0; i < channels; ++i)
-            for (j = 0; j < BATCH_SIZE; ++j)
-                agc_live[i].buffer[j] = my_fft[j * channels + i] / (float)channels;
-
-        if (stats) {
-            unsigned long now = now_us();
-            ch_sum += now - ch_start;
-            ch_start = now;
-        }
-
-        pthread_mutex_lock(&agc_buf_mutex);
-        while (running && agc_dead != NULL)
-            pthread_cond_wait(&agc_buf_done, &agc_buf_mutex);
-        if (!running) {
-            pthread_mutex_unlock(&agc_buf_mutex);
-            pthread_exit(NULL);
-        }
-
-        agc_dead = agc_live;
-        agc_dead_size = BATCH_SIZE; //agc_live_size;
-        live_buf = 1 - live_buf;
-        agc_live = &agc_buffers[channels * live_buf];
-        agc_live_size = 0;
-        pthread_cond_broadcast(&agc_buf_ready);
-        pthread_mutex_unlock(&agc_buf_mutex);
-
-        if (stats) {
-            sum += agc_end - agc_start;
-            if (++sum_count == avg_count) {
-                double eff_samp_rate = 40 * AGC_BUFFER_SIZE * avg_count * 2e6 / sum;
-                double rel_rate = eff_samp_rate / ((channels-2) * 2e6);
-                double ch_samp_rate = AGC_BUFFER_SIZE * channels / 2 * avg_count * 1e6 / ch_sum;
-                double ch_rel_rate = ch_samp_rate / samp_rate;
-                printf("agc %'11.0f samp/sec (%5.0f%% realtime); ch %'11.0f samp/sec (%5.0f%% realtime)\n", eff_samp_rate, 100.0 * rel_rate, ch_samp_rate, 100 * ch_rel_rate);
-                if (rel_rate < 0.99)
-                    printf("AGC is too slow, use fewer channels\n");
-                if (ch_rel_rate < 0.99)
-                    printf("Channelizer too slow, use fewer channels\n");
-                sum_count = sum = ch_sum = 0;
-            }
-            agc_start = now_us();
-        }
+        agc_submit(my_fft);
     }
     return NULL;
 }
+#endif
 
 void *channelizer_thread(void *arg) {
     unsigned i;
@@ -392,10 +403,18 @@ void init_threads(int launch_spewer) {
     blocking_queue_init(&bursts, BURST_QUEUE_SIZE);
     agc_threads = calloc(channels, sizeof(*agc_threads));
     pthread_create(&channelizer, NULL, channelizer_thread, NULL);
+#ifdef USE_FFTW
+    pthread_create(&fft_thread, NULL, fft_thread_main, NULL);
+#else
     pthread_create(&agc_dispatcher, NULL, agc_dispatcher_thread, NULL);
+#endif
 #ifdef __linux__
     pthread_setname_np(channelizer, "channelizer");
+#ifdef USE_FFTW
+    pthread_setname_np(fft_thread, "fft");
+#else
     pthread_setname_np(agc_dispatcher, "agc-dispatcher");
+#endif
 #endif
     for (i = 0; i < 40; ++i) {
         pthread_create(&agc_threads[i], NULL, agc_thread, (void *)i);
@@ -478,7 +497,7 @@ int main(int argc, char **argv) {
     float *h = malloc(sizeof(float) * h_len);
     liquid_firdes_kaiser(h_len, lp_cutoff/(float)channels, 60.0f, 0.0f, h);
     pfbch2_init(&magic, channels, m, h);
-    init_vkfft(channels, BATCH_SIZE);
+    init_fft(channels, BATCH_SIZE);
     free(h);
 
     agc_buffers = malloc(2 * channels * sizeof(*agc_buffers));

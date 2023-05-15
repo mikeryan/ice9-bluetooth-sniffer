@@ -103,7 +103,7 @@ typedef enum VkFFTResult {
 } VkFFTResult;
 
 
-VkFFTResult init_vkfft(unsigned width, unsigned batch_size);
+VkFFTResult init_fft(unsigned width, unsigned batch_size);
 void deinit_vkfft(void);
 void release_buffer(void *buf_in);
 
