@@ -2,6 +2,7 @@
  * Copyright (c) 2022 ICE9 Consulting LLC
  */
 
+#include <complex.h>
 #include <err.h>
 #include <signal.h>
 #include <stdio.h>

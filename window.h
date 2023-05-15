@@ -5,7 +5,6 @@
 #pragma once
 
 #include <complex.h>
-#include <Accelerate/Accelerate.h>
 
 typedef struct _window_t {
     int16_t *r;

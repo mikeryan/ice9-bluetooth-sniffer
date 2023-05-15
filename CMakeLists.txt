@@ -6,6 +6,9 @@ set (CMAKE_CXX_STANDARD 17)
 set(CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/cmake/Modules" ${CMAKE_MODULE_PATH})
 
 set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -fno-common -Wall -Wextra -Wno-unused-parameter -std=c99 -Werror=implicit-function-declaration")
+if (UNIX AND NOT APPLE AND CMAKE_SYSTEM_PROCESSOR MATCHES "arm|ARM")
+  set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -mfpu=neon")
+endif()
 
 set(CMAKE_C_FLAGS_DEBUG "-ggdb3 -g3 -O0 -fsanitize=address")
 set(CMAKE_C_FLAGS_MINSIZEREL "-Os -fsanitize=address")
@@ -109,6 +112,7 @@ endif()
 
 target_link_libraries(ice9-bluetooth
     PRIVATE Threads::Threads
+    m
     ${HACKRF_LIBRARIES}
     ${BLADERF_LIBRARIES}
     ${UHD_LIBRARIES}

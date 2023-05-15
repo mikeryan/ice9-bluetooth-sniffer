@@ -7,8 +7,6 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include <Accelerate/Accelerate.h>
-
 #include "pfbch2.h"
 
 void pfbch2_init(pfbch2_t *c, unsigned M, unsigned m, float *h_float) {
