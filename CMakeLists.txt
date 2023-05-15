@@ -55,7 +55,6 @@ include_directories(${HACKRF_INCLUDE_DIR})
 include_directories(${BLADERF_INCLUDE_DIR})
 include_directories(${UHD_INCLUDE_DIR})
 include_directories(${LIQUID_INCLUDE_DIR})
-include_directories(${BTBB_INCLUDE_DIR})
 
 set(SOURCES
     ${PROJECT_SOURCE_DIR}/bladerf.c
@@ -104,7 +103,6 @@ target_link_libraries(ice9-bluetooth
     ${BLADERF_LIBRARIES}
     ${UHD_LIBRARIES}
     ${LIQUID_LIBRARIES}
-    ${BTBB_LIBRARIES}
     # TODO make conditional
     ${FOUNDATION_LIB} ${QUARTZ_CORE_LIB} ${METAL_LIB}
 )
