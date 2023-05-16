@@ -6,8 +6,6 @@
 #include <string.h>
 #include <stdlib.h>
 
-#include <arm_neon.h>
-
 #include "window.h"
 
 void window_init(window_t *w, unsigned n) {
@@ -34,18 +32,8 @@ void window_push(window_t *w, int8_t *v) {
     w->i[w->read_index + w->len - 1] = (int16_t)v[1] << 8;
 }
 
-/*
-void window_dotprod(window_t *w, int16_t *b, int16_t *out) {
-    unsigned i;
-    int32_t sum_real = 0, sum_imag = 0;
-    for (i = 0; i < w->len; ++i) {
-        sum_real += w->r[w->read_index + i] * b[i];
-        sum_imag += w->r[w->read_index + i] * b[i];
-    }
-    out[0] = sum_real >> 16;
-    out[1] = sum_imag >> 16;
-}
-*/
+#if defined(__ARM_NEON) || defined(__ARM_NEON__)
+#include <arm_neon.h>
 
 void window_dotprod(window_t *w, int16_t *b, int16_t *out) {
     unsigned i;
@@ -72,3 +60,53 @@ void window_dotprod(window_t *w, int16_t *b, int16_t *out) {
     out[0] = real_sum >> 16;
     out[1] = imag_sum >> 16;
 }
+
+#elif defined(__SSE4_1__)
+#include <emmintrin.h>
+#include <smmintrin.h>
+
+void window_dotprod(window_t *w, int16_t *b, int16_t *out) {
+    unsigned i;
+    __m128i real_acc = _mm_setzero_si128(), imag_acc = _mm_setzero_si128();
+
+    for (i = 0; i < w->len; i += 4) {
+        __m128i real_a_vec = _mm_loadl_epi64((__m128i*)&w->r[w->read_index + i]);
+        __m128i imag_a_vec = _mm_loadl_epi64((__m128i*)&w->i[w->read_index + i]);
+        __m128i b_vec = _mm_loadl_epi64((__m128i*)&b[i]);
+
+        __m128i real_a_ext = _mm_cvtepi16_epi32(real_a_vec);
+        __m128i imag_a_ext = _mm_cvtepi16_epi32(imag_a_vec);
+        __m128i b_ext = _mm_cvtepi16_epi32(b_vec);
+
+        real_acc = _mm_add_epi32(real_acc, _mm_mullo_epi32(real_a_ext, b_ext));
+        imag_acc = _mm_add_epi32(imag_acc, _mm_mullo_epi32(imag_a_ext, b_ext));
+    }
+
+    real_acc = _mm_add_epi32(real_acc, _mm_shuffle_epi32(real_acc, _MM_SHUFFLE(0, 1, 2, 3)));
+    real_acc = _mm_add_epi32(real_acc, _mm_shuffle_epi32(real_acc, _MM_SHUFFLE(2, 3, 0, 1)));
+
+    imag_acc = _mm_add_epi32(imag_acc, _mm_shuffle_epi32(imag_acc, _MM_SHUFFLE(0, 1, 2, 3)));
+    imag_acc = _mm_add_epi32(imag_acc, _mm_shuffle_epi32(imag_acc, _MM_SHUFFLE(2, 3, 0, 1)));
+
+    int32_t real_sum = _mm_cvtsi128_si32(real_acc);
+    int32_t imag_sum = _mm_cvtsi128_si32(imag_acc);
+
+    out[0] = real_sum >> 16;
+    out[1] = imag_sum >> 16;
+}
+
+#else
+#warning Using non-vectorized dotprod
+
+void window_dotprod(window_t *w, int16_t *b, int16_t *out) {
+    unsigned i;
+    int32_t sum_real = 0, sum_imag = 0;
+    for (i = 0; i < w->len; ++i) {
+        sum_real += w->r[w->read_index + i] * b[i];
+        sum_imag += w->r[w->read_index + i] * b[i];
+    }
+    out[0] = sum_real >> 16;
+    out[1] = sum_imag >> 16;
+}
+
+#endif
