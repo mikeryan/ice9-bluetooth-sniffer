@@ -20,7 +20,12 @@ set(CMAKE_C_FLAGS_RELWITHDEBINFO "-O3 -ggdb3 -g3")
 set(CMAKE_C_FLAGS_RELEASE "-O3")
 set(CMAKE_EXE_LINKER_FLAGS_DEBUG "-fsanitize=address")
 
-option(USE_VKFFT "Should VkFFT (GPU Acceleration) be used?" ON)
+if (APPLE)
+    set(VKFFT_ENABLE ON)
+else()
+    set(VKFFT_ENABLE OFF)
+endif()
+option(USE_VKFFT "Should VkFFT (GPU Acceleration) be used?" ${VKFFT_ENABLE})
 
 include(FetchContent)
 
