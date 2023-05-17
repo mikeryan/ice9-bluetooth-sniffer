@@ -3,11 +3,14 @@
  */
 
 #include <err.h>
+#include <errno.h>
 #include <getopt.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
+#include <sys/stat.h>
+#include <sys/syslimits.h>
 
 #include <libhackrf/hackrf.h>
 
@@ -30,6 +33,46 @@ extern int verbose;
 extern int stats;
 
 void usage(int exitcode);
+
+static void do_mkdir(char *path) {
+    if (mkdir(path, 0777) < 0 && errno != EEXIST)
+        err(1, "Cannot install, unable to make directory %s", path);
+}
+
+static void exe_path(char *out) {
+#ifdef __linux__
+    readlink("/proc/self/exe", out, PATH_MAX);
+#else
+    char tmp[PATH_MAX];
+    uint32_t size = PATH_MAX;
+    _NSGetExecutablePath(tmp, &size);
+    realpath(tmp, out);
+#endif
+}
+
+static void install(void) {
+    char *home = getenv("HOME");
+    char path[PATH_MAX];
+    char exe[PATH_MAX];
+
+    if (home == NULL)
+        errx(1, "Cannot install: $HOME not set");
+
+    snprintf(path, sizeof(path), "%s/.config", home);
+    do_mkdir(path);
+    snprintf(path, sizeof(path), "%s/.config/wireshark", home);
+    do_mkdir(path);
+    snprintf(path, sizeof(path), "%s/.config/wireshark/extcap", home);
+    do_mkdir(path);
+
+    exe_path(exe);
+    snprintf(path, sizeof(path), "%s/.config/wireshark/extcap/ice9-bluetooth", home);
+    if (symlink(exe, path) < 0)
+        err(1, "Unable to install");
+
+    puts("ICE9 Bluetooth Sniffer successfully installed to user's Wireshark extcap directory");
+    exit(0);
+}
 
 void usrp_list(void);
 static void _print_interfaces(void) {
@@ -63,7 +106,7 @@ static void _print_config(void) {
 }
 
 void parse_options(int argc, char **argv) {
-    static int do_interfaces = 0, do_dlts = 0, do_config = 0, do_capture = 0;
+    static int do_interfaces = 0, do_dlts = 0, do_config = 0, do_capture = 0, do_install = 0;
     int ch;
 
     static const struct option longopts[] = {
@@ -84,10 +127,11 @@ void parse_options(int argc, char **argv) {
         { "help", no_argument, NULL, 'h' },
         { "verbose", no_argument, NULL, 'v' },
         { "stats", no_argument, NULL, 's' },
+        { "install", no_argument, NULL, 'I' },
         { NULL,         0,                      NULL,           0 }
     };
 
-    while ((ch = getopt_long(argc, argv, "li:w:C:c:f:avsh", longopts, NULL)) != -1) {
+    while ((ch = getopt_long(argc, argv, "li:w:C:c:f:aIvsh", longopts, NULL)) != -1) {
         switch (ch) {
             case 0:
                 // long opt
@@ -140,6 +184,10 @@ void parse_options(int argc, char **argv) {
                 stats = 1;
                 break;
 
+            case 'I':
+                do_install = 1;
+                break;
+
             case '?':
             case 'h':
             default:
@@ -147,6 +195,9 @@ void parse_options(int argc, char **argv) {
                 break;
         }
     }
+
+    if (do_install)
+        install(); // will exit
 
     int sum = do_interfaces + do_dlts + do_config + do_capture;
     if (in == NULL) {

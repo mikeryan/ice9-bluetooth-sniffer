@@ -15,6 +15,7 @@ Optional arguments:
     -s, --stats             print performance stats periodically
     -v, --verbose           print detailed info about captured bursts
     -i IFACE                which SDR to use, example: hackrf-1234abcd
+    -I, --install           install into Wireshark extcap folder
 
 This tool also supports the Wireshark extcap interface:
     ice-bluetooth --extcap-interfaces
