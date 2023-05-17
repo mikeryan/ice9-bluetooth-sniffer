@@ -40,7 +40,14 @@
 
 float samp_rate = 0.f;
 unsigned channels = 96;
-unsigned live_ch[40];
+int live_ch[40] = {
+    -1, -1, -1, -1, -1, -1, -1, -1,
+    -1, -1, -1, -1, -1, -1, -1, -1,
+    -1, -1, -1, -1, -1, -1, -1, -1,
+    -1, -1, -1, -1, -1, -1, -1, -1,
+    -1, -1, -1, -1, -1, -1, -1, -1,
+};
+unsigned first_live = 0, last_live = 0;;
 unsigned center_freq = 2441;
 pcap_t *pcap = NULL;
 char *base_name = NULL;
@@ -207,7 +214,7 @@ void agc_submit(float complex *fft_out) {
     if (stats) {
         sum += agc_end - agc_start;
         if (++sum_count == avg_count) {
-            double eff_samp_rate = 40 * AGC_BUFFER_SIZE * avg_count * 2e6 / sum;
+            double eff_samp_rate = (last_live - first_live + 1) * AGC_BUFFER_SIZE * avg_count * 2e6 / sum;
             double rel_rate = eff_samp_rate / ((channels-2) * 2e6);
             double ch_samp_rate = AGC_BUFFER_SIZE * channels / 2 * avg_count * 1e6 / ch_sum;
             double ch_rel_rate = ch_samp_rate / samp_rate;
@@ -441,7 +448,7 @@ void init_threads(int launch_spewer) {
     pthread_setname_np(agc_dispatcher, "agc-dispatcher");
 #endif
 #endif
-    for (i = 0; i < 40; ++i) {
+    for (i = first_live; i <= last_live; ++i) {
         pthread_create(&agc_threads[i], NULL, agc_thread, (void *)i);
 #ifdef __linux__
         char name[32];
@@ -476,7 +483,7 @@ void deinit_threads(int join_spewer) {
     pthread_cond_signal(&agc_buf_done);
     pthread_mutex_unlock(&agc_buf_mutex);
     pthread_barrier_local_shutdown(&agc_barrier);
-    for (i = 0; i < 40; ++i)
+    for (i = first_live; i <= last_live; ++i)
         pthread_join(agc_threads[i], NULL);
 
     blocking_queue_close(&bursts);
@@ -531,10 +538,14 @@ int main(int argc, char **argv) {
     catcher = malloc(sizeof(burst_catcher_t) * channels);
     for (i = 0; i < channels; ++i) {
         unsigned freq = center_freq + (i < channels / 2 ? i : -channels + i);
-        if ((freq & 1) == 0 && freq >= 2402 && freq <= 2480)
-            live_ch[(freq-2402)/2] = i;
+        if ((freq & 1) == 0 && freq >= 2402 && freq <= 2480) {
+            unsigned ch_num = (freq - 2402) / 2;
+            if (ch_num < first_live) first_live = ch_num;
+            if (ch_num > last_live)  last_live  = ch_num;
+            live_ch[ch_num] = i;
+        }
     }
-    for (i = 0; i < 40; ++i)
+    for (i = first_live; i <= last_live; ++i)
         burst_catcher_create(&catcher[i], 2402 + i * 2);
 
     init_threads(!live);
@@ -582,7 +593,7 @@ int main(int argc, char **argv) {
     if (pcap)
         pcap_close(pcap);
 
-    for (i = 0; i < 40; ++i)
+    for (i = first_live; i <= last_live; ++i)
         burst_catcher_destroy(&catcher[i]);
     free(catcher);
 
