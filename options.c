@@ -77,6 +77,7 @@ void parse_options(int argc, char **argv) {
         { "fifo", required_argument, NULL, 'w' },
 
         /* generic */
+        { "all-channels", no_argument, NULL, 'a' },
         { "channels", required_argument, NULL, 'C' },
         { "center-freq", required_argument, NULL, 'c' },
         { "file", required_argument, NULL, 'f' },
@@ -86,7 +87,7 @@ void parse_options(int argc, char **argv) {
         { NULL,         0,                      NULL,           0 }
     };
 
-    while ((ch = getopt_long(argc, argv, "li:w:C:c:f:vsh", longopts, NULL)) != -1) {
+    while ((ch = getopt_long(argc, argv, "li:w:C:c:f:avsh", longopts, NULL)) != -1) {
         switch (ch) {
             case 0:
                 // long opt
@@ -119,13 +120,16 @@ void parse_options(int argc, char **argv) {
                 break;
 
             case 'C':
-                warnx("channels fixed to 96");
-                // channels = atoi(optarg);
+                channels = atoi(optarg);
                 break;
 
             case 'c':
-                warnx("center freq fixed to 2441");
-                // center_freq = atoi(optarg);
+                center_freq = atoi(optarg);
+                break;
+
+            case 'a':
+                channels = 96;
+                center_freq = 2441;
                 break;
 
             case 'v':

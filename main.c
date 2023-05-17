@@ -97,8 +97,8 @@ pthread_t burst_processor;
 
 pthread_t spewer;
 
-// requires (channels / 2) samples
-void pfbch_execute_block(int8_t *samples) {
+// special case for all channels
+void pfbch_execute_block_96(int8_t *samples) {
     static float complex *buf = NULL;
     static unsigned buf_pos = 0;
 
@@ -111,6 +111,26 @@ void pfbch_execute_block(int8_t *samples) {
     pfbch2_execute(&magic, samples, out);
     for (i = 0; i < 96; ++i)
         buf[96 * buf_pos + i] = out[2*i] / 32768.f + out[2*i + 1] / 32768.f * I;
+
+    if (++buf_pos == BATCH_SIZE) {
+        buf = get_next_buffer();
+        buf_pos = 0;
+    }
+}
+
+void pfbch_execute_block(int8_t *samples) {
+    static float complex *buf = NULL;
+    static unsigned buf_pos = 0;
+
+    unsigned i;
+    int16_t out[96*2]; // FIXME (max number of channels we support)
+
+    if (buf == NULL)
+        buf = get_next_buffer();
+
+    pfbch2_execute(&magic, samples, out);
+    for (i = 0; i < channels; ++i)
+        buf[channels * buf_pos + i] = out[2*i] / 32768.f + out[2*i + 1] / 32768.f * I;
 
     if (++buf_pos == BATCH_SIZE) {
         buf = get_next_buffer();
@@ -235,9 +255,14 @@ void *channelizer_thread(void *arg) {
         if (blocking_queue_take(&samples_queue, &samples) != 0)
             return NULL;
 
-        // channelize them
-        for (i = 0; running && i + channels / 2 <= samples->num; i += channels / 2)
-            pfbch_execute_block(&samples->samples[2*i]);
+        if (channels == 96) {
+            for (i = 0; running && i + channels / 2 <= samples->num; i += channels / 2)
+                pfbch_execute_block(&samples->samples[2*i]);
+        } else {
+            // channelize them
+            for (i = 0; running && i + channels / 2 <= samples->num; i += channels / 2)
+                pfbch_execute_block_96(&samples->samples[2*i]);
+        }
 
         free(samples);
     }

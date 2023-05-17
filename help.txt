@@ -1,11 +1,14 @@
-Usage: ice9-bluetooth <-f <file.fc32> | -l> -c <center-freq> -C <chan>
+Usage: ice9-bluetooth <-f <file.fc32> | -l> <-a | -c <center-freq> -C <chan>>
 Captures Bluetooth packets using a HackRF, bladeRF, or USRP SDR.
 
 Mandatory arguments:
     -f, --file=FILE         read input from fc32 file (cfile)
     -l, --capture           capture live (cannot combine with -f)
+
+    -a, --all-channels      all-channel sniffing (requires bladeRF 2.0)
+            or
     -c, --center-freq=FREQ  center frequency (in MHz)
-    -C, --channels=CHAN     number of channels to capture (4, 8, 12, 16, 20)
+    -C, --channels=CHAN     number of channels to capture (>= 4, divisible by 4)
 
 Optional arguments:
     -w, --fifo=OUTPUT       output pcap to OUTPUT (may be a pcap file or FIFO)
