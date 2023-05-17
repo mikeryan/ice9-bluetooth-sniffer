@@ -179,6 +179,23 @@ void fft_done(void *f, void *out) {
     pthread_mutex_unlock(&agc_dispatch_mutex);
 }
 
+static double _convert_stats(double in, char *prefix_out) {
+    if (in < 1e3) {
+        *prefix_out = ' ';
+        return in;
+    }
+    if (in < 1e6) {
+        *prefix_out = 'k';
+        return in / 1e3;
+    }
+    if (in < 1e9) {
+        *prefix_out = 'M';
+        return in / 1e6;
+    }
+    *prefix_out = 'G';
+    return in / 1e9;
+}
+
 void agc_submit(float complex *fft_out) {
     const unsigned avg_count = 100;
     static unsigned long sum = 0;
@@ -218,7 +235,10 @@ void agc_submit(float complex *fft_out) {
             double rel_rate = eff_samp_rate / ((channels-2) * 2e6);
             double ch_samp_rate = AGC_BUFFER_SIZE * channels / 2 * avg_count * 1e6 / ch_sum;
             double ch_rel_rate = ch_samp_rate / samp_rate;
-            printf("agc %'11.0f samp/sec (%5.0f%% realtime); ch %'11.0f samp/sec (%5.0f%% realtime)\n", eff_samp_rate, 100.0 * rel_rate, ch_samp_rate, 100 * ch_rel_rate);
+            char prefix = ' ', agc_prefix = ' ';
+            ch_samp_rate = _convert_stats(ch_samp_rate, &prefix);
+            eff_samp_rate = _convert_stats(eff_samp_rate, &agc_prefix);
+            printf("ch %5.1f %csamp/sec (%3.0f%% realtime); agc %5.1f %csamp/sec (%3.0f%% realtime)\n", ch_samp_rate, prefix, 100 * ch_rel_rate, eff_samp_rate, agc_prefix, 100.0 * rel_rate);
             if (rel_rate < 0.99)
                 printf("AGC is too slow, use fewer channels\n");
             if (ch_rel_rate < 0.99)
