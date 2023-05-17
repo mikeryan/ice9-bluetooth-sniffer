@@ -10,7 +10,13 @@
 #include <string.h>
 #include <unistd.h>
 #include <sys/stat.h>
+
+// for PATH_MAX
+#ifdef __linux__
+#include <limits.h>
+#else
 #include <sys/syslimits.h>
+#endif
 
 #include <libhackrf/hackrf.h>
 
@@ -41,7 +47,8 @@ static void do_mkdir(char *path) {
 
 static void exe_path(char *out) {
 #ifdef __linux__
-    readlink("/proc/self/exe", out, PATH_MAX);
+    if (readlink("/proc/self/exe", out, PATH_MAX) < 0)
+        err(1, "Unable to install (readlink)");
 #else
     char tmp[PATH_MAX];
     uint32_t size = PATH_MAX;
