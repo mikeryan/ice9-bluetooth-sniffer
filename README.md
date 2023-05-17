@@ -13,13 +13,13 @@ harmless.
 
 ## Dependencies
 
-This tool requires libliquid, libhackrf, libbladerf, and libuhd. On
-Debian-based systems you can install these using:
+This tool requires libliquid, libhackrf, libbladerf, libuhd, and
+libfftw3. On Debian-based systems you can install these using:
 
-    sudo apt install libliquid-dev libhackrf-dev libbladerf-dev libuhd-dev
+    sudo apt install libliquid-dev libhackrf-dev libbladerf-dev libuhd-dev libfftw3-dev
 
-On macOS, [Homebrew](https://brew.sh/) is the recommended package
-manager:
+On macOS, fftw3 is not required and [Homebrew](https://brew.sh/) is the
+recommended package manager:
 
     brew install liquid-dsp hackrf libbladerf uhd
 
@@ -38,8 +38,6 @@ This code is untested against MacPorts. The deps can be installed with:
 The `install` target will copy the binary into
 `$HOME/.config/wireshark/extcap`. An `uninstall` target is also provided
 as a convenience.
-
-If you want to install the module to a custom directory, set `EXTCAP_INSTALL_PATH` when running `cmake`.
 
 ## Running
 
@@ -61,17 +59,18 @@ BLE packets (if your system is fast enough).
 
 ### Benchmarking
 
-Prior to benchmarking, please edit `Makefile` to change `-O0` to `-O2`
-and remove `-fsanitize=address`.
-
 There isn't a proper benchmark mode as such, but you can try
-demodulating a bunch of `0x00` bytes like so:
+demodulating a bunch of random bytes like so:
 
-    ./ice9-bluetooth -f /dev/zero -s -C 20
+    ./ice9-bluetooth -f /dev/urandom -s -C 20
 
-The channelizer will most likely be the bottleneck. Start with 20
-channels and observe the performance relative to real time. If it is not
-over 100%, lower the number of channels until it is.
+or on macOS:
+
+    ./ice9-bluetooth -f /dev/random -s -C 20
+
+The channelizer will be the bottleneck. Start with 20 channels and
+observe the performance relative to real time. If it is not over 100%,
+lower the number of channels until it is.
 
 If you do benchmark this code, please share your numbers with me!
 
