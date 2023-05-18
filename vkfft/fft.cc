@@ -121,7 +121,6 @@ VkFFTResult submit_fft(void) {
     resFFT = VkFFTAppend(&f->app, 1, &launchParams);
     if (resFFT != VKFFT_SUCCESS) return resFFT;
     commandEncoder->endEncoding();
-    commandEncoder->release();
 
     commandBuffer->addCompletedHandler([f](MTL::CommandBuffer *completedCommandBuffer) {
         f->buffer_state = fft_t::BUFFER_STATE_DONE;
@@ -129,7 +128,6 @@ VkFFTResult submit_fft(void) {
     });
 
     commandBuffer->commit();
-    commandBuffer->release();
 
     return resFFT;
 }

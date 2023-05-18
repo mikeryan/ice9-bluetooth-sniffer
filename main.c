@@ -171,7 +171,7 @@ void fft_done(void *f, void *out) {
         pthread_cond_wait(&dispatch_done_cond, &agc_dispatch_mutex);
     if (!running) {
         pthread_mutex_unlock(&agc_dispatch_mutex);
-        pthread_exit(NULL);
+        return;
     }
     fft = f;
     fft_out = out;
