@@ -284,11 +284,11 @@ void *channelizer_thread(void *arg) {
 
         if (channels == 96) {
             for (i = 0; running && i + channels / 2 <= samples->num; i += channels / 2)
-                pfbch_execute_block(&samples->samples[2*i]);
+                pfbch_execute_block_96(&samples->samples[2*i]);
         } else {
             // channelize them
             for (i = 0; running && i + channels / 2 <= samples->num; i += channels / 2)
-                pfbch_execute_block_96(&samples->samples[2*i]);
+                pfbch_execute_block(&samples->samples[2*i]);
         }
 
         free(samples);
