@@ -31,10 +31,18 @@ void pfbch2_init(pfbch2_t *c, unsigned M, unsigned m, float *h_float) {
         for (n = 0; n < c->h_sub_len; ++n)
             c->h_sub[i * c->h_sub_len + c->h_sub_len - n - 1] = h[i + n * c->M];
     }
+    free(h);
 
     c->w = malloc(sizeof(window_t) * c->M);
     for (i = 0; i < c->M; ++i)
         window_init(&c->w[i], c->h_sub_len);
+}
+
+void pfbch2_release(pfbch2_t *c) {
+    unsigned i;
+    for (i = 0; i < c->M; ++i)
+        window_release(&c->w[i]);
+    free(c->w);
 }
 
 void pfbch2_execute(pfbch2_t *c, int8_t *x, int16_t *y) {

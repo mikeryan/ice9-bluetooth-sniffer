@@ -21,6 +21,11 @@ void window_init(window_t *w, unsigned n) {
     w->i = malloc(sizeof(int16_t) * w->num_allocated);
 }
 
+void window_release(window_t *w) {
+    free(w->r);
+    free(w->i);
+}
+
 void window_push(window_t *w, int8_t *v) {
     ++w->read_index;
     w->read_index &= w->mask;

@@ -19,4 +19,5 @@ typedef struct _pfbch2_t {
 } pfbch2_t;
 
 void pfbch2_init(pfbch2_t *c, unsigned M, unsigned m, float *h);
+void pfbch2_release(pfbch2_t *c);
 void pfbch2_execute(pfbch2_t *c, int8_t *x, int16_t *y);

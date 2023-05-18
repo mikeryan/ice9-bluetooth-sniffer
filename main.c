@@ -617,5 +617,7 @@ int main(int argc, char **argv) {
         burst_catcher_destroy(&catcher[i]);
     free(catcher);
 
+    pfbch2_release(&magic);
+
     return 0;
 }
