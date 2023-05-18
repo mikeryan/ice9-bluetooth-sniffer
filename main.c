@@ -315,9 +315,14 @@ void *agc_thread(void *id_ptr) {
                     burst_destroy(burst);
                     memset(burst, 0, sizeof(*burst));
                 } else {
-                    if (blocking_queue_add(&bursts, burst) == BQ_FULL && verbose)
-                        printf("WARNING: dropped burst on the floor. try fewer channels.\n");
-                    burst = calloc(1, sizeof(*burst));
+                    if (blocking_queue_add(&bursts, burst) == BQ_FULL) {
+                        if (verbose)
+                            printf("WARNING: dropped burst on the floor. try fewer channels.\n");
+                        burst_destroy(burst);
+                        memset(burst, 0, sizeof(*burst));
+                    } else {
+                        burst = calloc(1, sizeof(*burst));
+                    }
                 }
             }
         }
@@ -451,7 +456,7 @@ void init_threads(int launch_spewer) {
     pthread_cond_init(&agc_buf_ready, NULL);
     pthread_cond_init(&agc_buf_done, NULL);
     pthread_barrier_local_init(&agc_barrier, NULL, 40);
-    blocking_queue_init(&samples_queue, SAMPLES_QUEUE_SIZE);
+    blocking_queue_init(&samples_queue, launch_spewer ? 16 : SAMPLES_QUEUE_SIZE);
     blocking_queue_init(&bursts, BURST_QUEUE_SIZE);
     agc_threads = calloc(channels, sizeof(*agc_threads));
     pthread_create(&channelizer, NULL, channelizer_thread, NULL);
@@ -492,10 +497,11 @@ void deinit_threads(int join_spewer) {
     uintptr_t i;
     running = 0;
 
+    blocking_queue_close(&samples_queue);
+
     if (join_spewer)
         pthread_join(spewer, NULL);
 
-    blocking_queue_close(&samples_queue);
     pthread_join(channelizer, NULL);
 
     pthread_mutex_lock(&agc_buf_mutex);
