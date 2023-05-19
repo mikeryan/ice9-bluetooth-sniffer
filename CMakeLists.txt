@@ -145,8 +145,15 @@ if (EXTCAP_INSTALL_PATH)
     cmake_policy(SET CMP0087 NEW)
   endif()
   install(CODE "
-      execute_process(COMMAND ${CMAKE_COMMAND} -E create_symlink
-          $<TARGET_FILE:ice9-bluetooth> ${EXTCAP_INSTALL_PATH}/extcap/ice9-bluetooth)
+      execute_process(
+        COMMAND ${CMAKE_COMMAND} -E make_directory \$ENV{DESTDIR}${EXTCAP_INSTALL_PATH}/extcap/
+      )
+  ")
+  install(CODE "
+      execute_process(
+        COMMAND ${CMAKE_COMMAND} -E create_symlink
+        ${CMAKE_INSTALL_PREFIX}/bin/ice9-bluetooth \$ENV{DESTDIR}${EXTCAP_INSTALL_PATH}/extcap/ice9-bluetooth
+      )
   ")
 endif()
 
