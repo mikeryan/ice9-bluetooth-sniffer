@@ -41,7 +41,7 @@ find_package(Liquid REQUIRED)
 
 # Generate header for help
 add_custom_command(
-  OUTPUT "help.h"
+  OUTPUT "${PROJECT_SOURCE_DIR}/help.h"
   COMMAND xxd -i help.txt help.h
   DEPENDS ${PROJECT_SOURCE_DIR}/help.txt
   WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}
