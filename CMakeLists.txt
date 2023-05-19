@@ -43,13 +43,13 @@ find_package(Liquid REQUIRED)
 execute_process(COMMAND ${CMAKE_C_COMPILER} -dumpmachine
                 OUTPUT_VARIABLE COMPILER_ABI
                 OUTPUT_STRIP_TRAILING_WHITESPACE)
-find_path(EXTCAP_PATH extcap HINTS
+find_path(EXTCAP_INSTALL_PATH extcap HINTS
     /lib/${COMPILER_ABI}/wireshark
     /usr/lib64/wireshark
     /usr/lib/wireshark
     /Applications/Wireshark.app/Contents/MacOS
 )
-if (NOT EXTCAP_PATH)
+if (NOT EXTCAP_INSTALL_PATH)
   message("Warning: Wireshark extcap path not found. If you have Wireshark installed, report a bug")
 endif()
 
@@ -140,13 +140,13 @@ set_property(TARGET ice9-bluetooth PROPERTY INTERPROCEDURAL_OPTIMIZATION TRUE)
 
 install(TARGETS ice9-bluetooth DESTINATION bin)
 
-if (EXTCAP_PATH)
+if (EXTCAP_INSTALL_PATH)
   if(POLICY CMP0087)
     cmake_policy(SET CMP0087 NEW)
   endif()
   install(CODE "
       execute_process(COMMAND ${CMAKE_COMMAND} -E create_symlink
-          $<TARGET_FILE:ice9-bluetooth> ${EXTCAP_PATH}/extcap/ice9-bluetooth)
+          $<TARGET_FILE:ice9-bluetooth> ${EXTCAP_INSTALL_PATH}/extcap/ice9-bluetooth)
   ")
 endif()
 
