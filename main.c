@@ -105,44 +105,22 @@ pthread_t burst_processor;
 pthread_t spewer;
 
 // special case for all channels
-void pfbch_execute_block_96(int8_t *samples) {
-    static float complex *buf = NULL;
-    static unsigned buf_pos = 0;
-
+void pfbch_execute_block_96(int8_t *samples, float complex *buf, unsigned buf_pos) {
     unsigned i;
     int16_t out[96*2]; // FIXME (max number of channels we support)
-
-    if (buf == NULL)
-        buf = get_next_buffer();
 
     pfbch2_execute(&magic, samples, out);
     for (i = 0; i < 96; ++i)
         buf[96 * buf_pos + i] = out[2*i] / 32768.f + out[2*i + 1] / 32768.f * I;
-
-    if (++buf_pos == BATCH_SIZE) {
-        buf = get_next_buffer();
-        buf_pos = 0;
-    }
 }
 
-void pfbch_execute_block(int8_t *samples) {
-    static float complex *buf = NULL;
-    static unsigned buf_pos = 0;
-
+void pfbch_execute_block(int8_t *samples, float complex *buf, unsigned buf_pos) {
     unsigned i;
     int16_t out[96*2]; // FIXME (max number of channels we support)
-
-    if (buf == NULL)
-        buf = get_next_buffer();
 
     pfbch2_execute(&magic, samples, out);
     for (i = 0; i < channels; ++i)
         buf[channels * buf_pos + i] = out[2*i] / 32768.f + out[2*i + 1] / 32768.f * I;
-
-    if (++buf_pos == BATCH_SIZE) {
-        buf = get_next_buffer();
-        buf_pos = 0;
-    }
 }
 
 void push_samples(sample_buf_t *buf) {
@@ -276,6 +254,8 @@ void *agc_dispatcher_thread(void *arg) {
 void *channelizer_thread(void *arg) {
     unsigned i;
     sample_buf_t *samples = NULL;
+    float complex *fft_in = get_next_buffer();
+    unsigned fft_in_pos = 0;
 
     while (running) {
         // get next samples
@@ -283,12 +263,22 @@ void *channelizer_thread(void *arg) {
             return NULL;
 
         if (channels == 96) {
-            for (i = 0; running && i + channels / 2 <= samples->num; i += channels / 2)
-                pfbch_execute_block_96(&samples->samples[2*i]);
+            for (i = 0; running && i + channels / 2 <= samples->num; i += channels / 2) {
+                pfbch_execute_block_96(&samples->samples[2*i], fft_in, fft_in_pos);
+                if (++fft_in_pos == BATCH_SIZE) {
+                    fft_in = get_next_buffer();
+                    fft_in_pos = 0;
+                }
+            }
         } else {
             // channelize them
-            for (i = 0; running && i + channels / 2 <= samples->num; i += channels / 2)
-                pfbch_execute_block(&samples->samples[2*i]);
+            for (i = 0; running && i + channels / 2 <= samples->num; i += channels / 2) {
+                pfbch_execute_block(&samples->samples[2*i], fft_in, fft_in_pos);
+                if (++fft_in_pos == BATCH_SIZE) {
+                    fft_in = get_next_buffer();
+                    fft_in_pos = 0;
+                }
+            }
         }
 
         free(samples);
