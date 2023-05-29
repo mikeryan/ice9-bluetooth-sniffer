@@ -5,6 +5,7 @@
 #define _GNU_SOURCE
 #include <complex.h>
 #include <err.h>
+#include <limits.h>
 #include <locale.h>
 #include <math.h>
 #include <pthread.h>
@@ -47,7 +48,7 @@ int live_ch[40] = {
     -1, -1, -1, -1, -1, -1, -1, -1,
     -1, -1, -1, -1, -1, -1, -1, -1,
 };
-unsigned first_live = 0, last_live = 0;;
+unsigned first_live = UINT_MAX, last_live = 0;;
 unsigned center_freq = 2441;
 pcap_t *pcap = NULL;
 char *base_name = NULL;
