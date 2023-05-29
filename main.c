@@ -440,16 +440,20 @@ out:
 
 void init_threads(int launch_spewer) {
     uintptr_t i;
+    unsigned active_channels = 0;
     pthread_mutex_init(&agc_dispatch_mutex, NULL);
     pthread_mutex_init(&agc_buf_mutex, NULL);
     pthread_cond_init(&fft_done_cond, NULL);
     pthread_cond_init(&dispatch_done_cond, NULL);
     pthread_cond_init(&agc_buf_ready, NULL);
     pthread_cond_init(&agc_buf_done, NULL);
-    pthread_barrier_local_init(&agc_barrier, NULL, 40);
+    for (i = 0; i < 40; ++i)
+        if (live_ch[i] >= 0)
+            ++active_channels;
+    pthread_barrier_local_init(&agc_barrier, NULL, active_channels);
     blocking_queue_init(&samples_queue, launch_spewer ? 16 : SAMPLES_QUEUE_SIZE);
     blocking_queue_init(&bursts, BURST_QUEUE_SIZE);
-    agc_threads = calloc(channels, sizeof(*agc_threads));
+    agc_threads = calloc(40, sizeof(*agc_threads));
     pthread_create(&channelizer, NULL, channelizer_thread, NULL);
 #ifdef USE_FFTW
     pthread_create(&fft_thread, NULL, fft_thread_main, NULL);
@@ -552,7 +556,7 @@ int main(int argc, char **argv) {
     agc_buffers = malloc(2 * channels * sizeof(*agc_buffers));
     agc_live = &agc_buffers[channels * live_buf];
 
-    catcher = malloc(sizeof(burst_catcher_t) * channels);
+    catcher = calloc(40, sizeof(burst_catcher_t));
     for (i = 0; i < channels; ++i) {
         unsigned freq = center_freq + (i < channels / 2 ? i : -channels + i);
         if ((freq & 1) == 0 && freq >= 2402 && freq <= 2480) {
