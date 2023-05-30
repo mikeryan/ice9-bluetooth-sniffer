@@ -14,10 +14,10 @@ Optional arguments:
     -i IFACE                which SDR to use, example: hackrf-1234abcd
 
 This tool also supports the Wireshark extcap interface:
-    ice-bluetooth --extcap-interfaces
-    ice-bluetooth --extcap-interface=INTERFACE --extcap-dlts
-    ice-bluetooth --extcap-interface=INTERFACE --extcap-config
-    ice-bluetooth --extcap-interface=INTERFACE --fifo=PATH_FILENAME --capture
+    ice9-bluetooth --extcap-interfaces
+    ice9-bluetooth --extcap-interface=INTERFACE --extcap-dlts
+    ice9-bluetooth --extcap-interface=INTERFACE --extcap-config
+    ice9-bluetooth --extcap-interface=INTERFACE --fifo=PATH_FILENAME --capture
 
 ICE9 Bluetooth Sniffer was designed and written by Mike Ryan of ICE9 Consulting.
 For more information visit https://ice9.us/
