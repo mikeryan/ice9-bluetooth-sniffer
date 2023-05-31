@@ -65,6 +65,7 @@ pid_t self_pid;
 
 unsigned sps(void) { return (unsigned)(samp_rate / channels / 1e6f * 2.0f); }
 
+const float sym_rate = 1e6f;
 const float lp_cutoff = 0.75f; // cutoff in MHz
 const unsigned m = 4; // magical polyphase filter bank number (filter half-length)
 

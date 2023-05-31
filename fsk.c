@@ -15,10 +15,6 @@
 const unsigned median_symbols = 64; // number of symbols to use for CFO correction
 const float max_freq_offset = 0.4f;
 
-extern float samp_rate;
-extern unsigned channels;
-float sym_rate = 1e6f;
-
 unsigned sps(void);
 
 static inline unsigned median_size(void) {
@@ -29,9 +25,10 @@ void fsk_demod_init(fsk_demod_t *fsk) {
     fsk->f = freqdem_create(0.8f);
     fsk->pos_points = malloc(sizeof(float) * median_size());
     fsk->neg_points = malloc(sizeof(float) * median_size());
-
-    fsk->s = symsync_rrrf_create_rnyquist(LIQUID_FIRFILT_RRC, samp_rate / sym_rate / channels * 2, 7, 0.35f, 32);
-    symsync_rrrf_set_lf_bw(fsk->s, 0.02f);
+    /*
+    fsk->s = symsync_crcf_create_rnyquist(LIQUID_FIRFILT_RRC, samp_rate / sym_rate / channels * 2, 3, 0.8f, 32);
+    symsync_crcf_set_lf_bw(fsk->s, 0.045f);
+    */
 }
 
 void fsk_demod_destroy(fsk_demod_t *fsk) {
@@ -155,26 +152,21 @@ void fsk_demod(fsk_demod_t *fsk, float complex *burst, unsigned burst_len, unsig
 
     uint8_t *bits = malloc(burst_len - silence_offset); // over-alloc by 2
     unsigned len = 0;
-    float out;
-    unsigned int out_len;
-    for (i = silence_offset; i < burst_len; ++i) {
-        // uint8_t bit = demod[i] > 0;
-        // bits[len++] = bit;
-        symsync_rrrf_execute(fsk->s, &demod[i], 1, &out, &out_len);
+    for (i = silence_offset+1; i < burst_len; i+=2) {
+        uint8_t bit = demod[i] > 0;
+        bits[len++] = bit;
+#if 0
+        float complex sample, out;
+        unsigned int out_len;
+        sample = demod[i];
+        symsync_crcf_execute(fsk->s, &sample, 1, &out, &out_len);
         if (out_len > 0) {
             // dumb bit decision
-            uint8_t bit = out > 0.f;
+            uint8_t bit = creal(out) > 0;
             bits[len++] = bit;
         }
+#endif
     }
-
-    for (i = 0; i < 8; ++i) {
-        float sample = 0;
-        symsync_rrrf_execute(fsk->s, &sample, 1, &out, &out_len);
-        if (out_len > 0)
-            bits[len++] = out > 0;
-    }
-
     p_out->demod = demod;
     p_out->bits = bits;
     p_out->bits_len = len;

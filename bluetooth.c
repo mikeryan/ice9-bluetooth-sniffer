@@ -46,51 +46,54 @@ ble_packet_t *ble_burst(uint8_t *bits, unsigned bits_len, unsigned freq, struct 
     uint8_t smallest_header_len;
 
     // possibly BLE, extract access address
-    unsigned channel = freq_to_channel(freq);
+    if (bits[0] == bits[2] && bits[2] == bits[4] &&
+            bits[1] == bits[3] && bits[3] == bits[5]) {
+        unsigned channel = freq_to_channel(freq);
 
-    // try a few candidates for AA
-    for (i = 10; i < 16; ++i) {
-        uint32_t aa = 0;
-        for (j = 0; j < 32; ++j)
-            aa |= bits[i+j] << j;
-        uint8_t header_len = 0;
-        unsigned wh = (whitening_index[channel] + 8) % sizeof(whitening);
-        for (j = 0; j < 8; ++j) {
-            header_len |= (bits[i+32+8+j] ^ whitening[wh]) << j;
-            wh = (wh + 1) % sizeof(whitening);
-        }
-        unsigned bit_len = 8 + 32 + 16 + header_len * 8 + 24; // preamble + AA + header + body + CRC
-        int delta = (int)bits_len - (i - 8) - (int)bit_len;
-        if (delta > -2 && (unsigned)delta < smallest_delta) {
-            smallest_delta = delta;
-            smallest_offset = i;
-            smallest_aa = aa;
-            smallest_header_len = header_len;
-        }
-    }
-
-    // see if any of the candidates have a length that makes sense
-    if (smallest_delta < 20) {
-#define MAX(X,Y) ((X) > (Y) ? (X) : (Y))
-        ble_packet_t *p = malloc(sizeof(*p) + MAX(4 + 2 + smallest_header_len + 3, 64)); // FIXME bug in libbtbb
-        p->aa = smallest_aa;
-        p->freq = freq;
-        p->len = 4 + 2 + smallest_header_len + 3;
-        unsigned wh = whitening_index[channel];
-        p->data[0] = (smallest_aa >>  0) & 0xff;
-        p->data[1] = (smallest_aa >>  8) & 0xff;
-        p->data[2] = (smallest_aa >> 16) & 0xff;
-        p->data[3] = (smallest_aa >> 24) & 0xff;
-        for (i = 0; i < p->len-4; ++i) {
-            uint8_t byte = 0;
+        // try three candidates for AA
+        for (i = 6; i < 9; ++i) {
+            uint32_t aa = 0;
+            for (j = 0; j < 32; ++j)
+                aa |= bits[i+j] << j;
+            uint8_t header_len = 0;
+            unsigned wh = (whitening_index[channel] + 8) % sizeof(whitening);
             for (j = 0; j < 8; ++j) {
-                byte |= (bits[smallest_offset+32+i*8+j] ^ whitening[wh]) << j;
+                header_len |= (bits[i+32+8+j] ^ whitening[wh]) << j;
                 wh = (wh + 1) % sizeof(whitening);
             }
-            p->data[i+4] = byte;
+            unsigned bit_len = 8 + 32 + 16 + header_len * 8 + 24; // preamble + AA + header + body + CRC
+            int delta = (int)bits_len - (int)bit_len;
+            if (delta > 0 && (unsigned)delta < smallest_delta) {
+                smallest_delta = delta;
+                smallest_offset = i;
+                smallest_aa = aa;
+                smallest_header_len = header_len;
+            }
         }
-        p->timestamp = timestamp;
-        return p;
+
+        // see if any of the candidates have a length that makes sense
+        if (smallest_delta < 20) {
+#define MAX(X,Y) ((X) > (Y) ? (X) : (Y))
+            ble_packet_t *p = malloc(sizeof(*p) + MAX(4 + 2 + smallest_header_len + 3, 64)); // FIXME bug in libbtbb
+            p->aa = smallest_aa;
+            p->freq = freq;
+            p->len = 4 + 2 + smallest_header_len + 3;
+            unsigned wh = whitening_index[channel];
+            p->data[0] = (smallest_aa >>  0) & 0xff;
+            p->data[1] = (smallest_aa >>  8) & 0xff;
+            p->data[2] = (smallest_aa >> 16) & 0xff;
+            p->data[3] = (smallest_aa >> 24) & 0xff;
+            for (i = 0; i < p->len-4; ++i) {
+                uint8_t byte = 0;
+                for (j = 0; j < 8; ++j) {
+                    byte |= (bits[smallest_offset+32+i*8+j] ^ whitening[wh]) << j;
+                    wh = (wh + 1) % sizeof(whitening);
+                }
+                p->data[i+4] = byte;
+            }
+            p->timestamp = timestamp;
+            return p;
+        }
     }
     return NULL;
 }
