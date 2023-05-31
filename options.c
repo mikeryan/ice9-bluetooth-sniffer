@@ -90,18 +90,12 @@ static void _print_dlts(void) {
 }
 
 static void _print_config(void) {
+    unsigned i;
     printf("arg {number=0}{call=--channels}{display=Channels}{tooltip=Number of channels to capture}{type=selector}\n");
-    printf("value {arg=0}{value=4}{display=4}{default=false}\n");
-    printf("value {arg=0}{value=8}{display=8}{default=false}\n");
-    printf("value {arg=0}{value=12}{display=12}{default=false}\n");
-    printf("value {arg=0}{value=16}{display=16}{default=false}\n");
-    printf("value {arg=0}{value=20}{display=20}{default=true}\n");
-    printf("value {arg=0}{value=24}{display=24}{default=false}\n");
-    printf("value {arg=0}{value=28}{display=28}{default=false}\n");
-    printf("value {arg=0}{value=32}{display=32}{default=false}\n");
-    printf("value {arg=0}{value=36}{display=36}{default=false}\n");
-    printf("value {arg=0}{value=40}{display=40}{default=false}\n");
-    printf("arg {number=1}{call=--center-freq}{display=Center Frequency}{tooltip=Center frequency to capture on}{type=integer}{range=2400,2480}{default=2427}\n");
+    for (i = 4; i < 64; i += 4)
+        printf("value {arg=0}{value=%d}{display=%d}{default=falses}\n", i, i);
+    printf("value {arg=0}{value=96}{display=96}{default=true}\n");
+    printf("arg {number=1}{call=--center-freq}{display=Center Frequency}{tooltip=Center frequency to capture on}{type=integer}{range=2400,2480}{default=2441}\n");
     exit(0);
 }
 
