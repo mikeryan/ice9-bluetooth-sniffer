@@ -10,7 +10,13 @@
 #include <string.h>
 #include <unistd.h>
 #include <sys/stat.h>
+
+// for PATH_MAX
+#ifdef __linux__
+#include <limits.h>
+#else
 #include <sys/syslimits.h>
+#endif
 
 #include <libhackrf/hackrf.h>
 
