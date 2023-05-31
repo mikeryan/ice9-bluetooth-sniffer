@@ -32,7 +32,7 @@ void fsk_demod_init(fsk_demod_t *fsk) {
 }
 
 void fsk_demod_destroy(fsk_demod_t *fsk) {
-    symsync_rrrf_destroy(fsk->s);
+    // symsync_rrrf_destroy(fsk->s);
     freqdem_destroy(fsk->f);
     free(fsk->pos_points);
     free(fsk->neg_points);
