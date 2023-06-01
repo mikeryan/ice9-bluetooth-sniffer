@@ -1,3 +1,12 @@
 {
-   "signedContributors": []
+  "signedContributors": [
+    {
+      "name": "jsmif",
+      "id": 132527732,
+      "comment_id": 1572605963,
+      "created_at": "2023-06-01T18:52:04Z",
+      "repoId": 493105486,
+      "pullRequestNo": 16
+    }
+  ]
 }
