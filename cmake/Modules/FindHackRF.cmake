@@ -11,6 +11,7 @@ FIND_PATH(HACKRF_INCLUDE_DIR hackrf.h
         ${HACKRF_DIR}/include/libhackrf
         /opt/homebrew/include/libhackrf
         /opt/local/include/libhackrf
+        /home/linuxbrew/.linuxbrew/include/libhackrf
         /usr/include/libhackrf
         /usr/local/include/libhackrf
 )
