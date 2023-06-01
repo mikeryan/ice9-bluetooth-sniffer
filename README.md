@@ -1,15 +1,7 @@
 # ICE9 Bluetooth Sniffer
 
-Bluetooth sniffer for Wireshark and HackRF, BladeRF, and USRP that can
-listen to between 4 and 40 channels simultaneously.
-
-## M1 VkFFT Preview
-
-This is a preview branch that showcases real-time performance sniffing
-all 40 BLE channels on an M1/M2 Mac using a bladeRF. This version only
-runs on macOS, only supports bladeRF, and is fixed to 96 channels
-centered at 2441 MHz. It reliably segfaults on exit, but it should be
-harmless.
+Wireshark-compatible all-channel Bluetooth sniffer for bladeRF, with
+wideband sniffing (4-60 MHz) for HackRF and USRP.
 
 ## Dependencies
 
@@ -35,9 +27,11 @@ This code is untested against MacPorts. The deps can be installed with:
     make
     make install
 
-The `install` target will copy the binary into
-`$HOME/.config/wireshark/extcap`. An `uninstall` target is also provided
-as a convenience.
+The `install` target will copy the binary into `/usr/local/bin` (by
+default) and will attempt to install into the system Wireshark directory
+on Linux if detected. Use `ice9-bluetooth --install` to install the
+binary into your local extcap dir (`$HOME/.config/wireshark/extcap`). An
+`uninstall` target is also provided as a convenience.
 
 ## Running
 
@@ -48,14 +42,18 @@ channels centered on 2427 MHz and log all BLE traffic to a PCAP file:
 
     ./ice9-bluetooth -l -c 2427 -C 20 -w ble.pcap
 
+To capture all channels (the default as of 23.06.0) run the following:
+
+    ./ice9-bluetooth -l -i bladerf0 -a -w all_channels.pcap
+
 For performance stats, add `-s`. For low-level details and info about
 classic Bluetooth packets, add `-v`.
 
-To use in Wireshark, plug in your HackRF and launch Wireshark. Scroll to
-the bottom of the interfaces list in the main window and you should see
-"ICE9 Bluetooth: hackrf-$serial" listed. Click the wheel icon to the
-left of it to configure it if you want, but the defaults should get you
-BLE packets (if your system is fast enough).
+To use in Wireshark, plug in your SDR and launch Wireshark. Scroll to the
+bottom of the interfaces list in the main window and you should see "ICE9
+Bluetooth: hackrf-$serial" (or similar) listed. Click the wheel icon to the
+left of it to configure it if you want, but the defaults should get you BLE
+packets (if your system is fast enough).
 
 ### Benchmarking
 
@@ -70,7 +68,8 @@ or on macOS:
 
 The channelizer will be the bottleneck. Start with 20 channels and
 observe the performance relative to real time. If it is not over 100%,
-lower the number of channels until it is.
+lower the number of channels until it is. If it is over realtime, keep
+going until you reach 96 channels.
 
 If you do benchmark this code, please share your numbers with me!
 
