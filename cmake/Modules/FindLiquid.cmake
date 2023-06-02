@@ -10,6 +10,7 @@
 FIND_PATH(LIQUID_INCLUDE_DIR liquid.h
         ${LIQUID_DIR}/include/liquid
         /opt/homebrew/include/liquid
+        /home/linuxbrew/.linuxbrew/include/liquid
         /opt/local/include/liquid
         /usr/include/liquid
         /usr/local/include/liquid
