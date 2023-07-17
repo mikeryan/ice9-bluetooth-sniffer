@@ -7,21 +7,33 @@
 # also defined, but not for general use are
 #  UHD_LIBRARY, where to find the UHD library.
 
-FIND_PATH(UHD_INCLUDE_DIR uhd/config.hpp
+find_package(PkgConfig)
+pkg_check_modules(PC_UHD QUIET uhd)
+
+FIND_PATH(UHD_INCLUDE_DIR
+    NAMES uhd/config.hpp
+    HINTS
         ${UHD_DIR}/include
+        ${PC_UHD_INCLUDEDIR}
+        ${PC_UHD_INCLUDE_DIRS}
         /opt/homebrew/include
         /opt/local/include
         /usr/include
         /usr/local/include
 )
 
-FIND_LIBRARY(UHD_LIBRARY uhd
+FIND_LIBRARY(UHD_LIBRARY
+    NAMES uhd
+    HINTS
         ${UHD_DIR}/lib
         /opt/homebrew/lib
         /opt/local/lib
         /usr/lib
         /usr/local/lib
 )
+
+include(FindPackageHandleStandardArgs)
+FIND_PACKAGE_HANDLE_STANDARD_ARGS(UHD DEFAULT_MSG UHD_LIBRARY UHD_INCLUDE_DIR)
 
 IF (UHD_LIBRARY AND UHD_INCLUDE_DIR)
     SET(UHD_LIBRARIES ${UHD_LIBRARY})
@@ -47,3 +59,6 @@ MARK_AS_ADVANCED(
         UHD_LIBRARY
         UHD_INCLUDE_DIR
 )
+
+set(UHD_INCLUDE_DIRS ${UHD_INCLUDE_DIR})
+set(UHD_LIBRARIES ${UHD_LIBRARY})
