@@ -26,6 +26,8 @@ find_library(UHD_LIBRARY
     NAMES uhd
     HINTS
         ${UHD_DIR}/lib
+        ${PC_UHD_LIBDIR}
+        ${PC_UHD_LIBRARY_DIRS}
         /opt/homebrew/lib
         /opt/local/lib
         /usr/lib

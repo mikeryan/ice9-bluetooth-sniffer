@@ -30,6 +30,10 @@ find_library(LIBHACKRF_LIBRARY
         $ENV{LIBHACKRF_DIR}/lib
         ${PC_LIBHACKRF_LIBDIR}
         ${PC_LIBHACKRF_LIBRARY_DIRS}
+        /opt/homebrew/lib
+        /opt/local/lib
+        /usr/lib
+        /usr/local/lib
 )
 
 include(FindPackageHandleStandardArgs)

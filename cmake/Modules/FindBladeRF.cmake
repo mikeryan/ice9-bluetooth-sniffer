@@ -28,6 +28,10 @@ find_library(LIBBLADERF_LIBRARY
         $ENV{LIBBLADERF_DIR}/lib
         ${PC_LIBBLADERF_LIBDIR}
         ${PC_LIBBLADERF_LIBRARY_DIRS}
+        /opt/homebrew/lib
+        /opt/local/lib
+        /usr/lib
+        /usr/local/lib
 )
 
 include(FindPackageHandleStandardArgs)

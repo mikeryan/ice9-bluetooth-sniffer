@@ -30,6 +30,10 @@ find_library(LIQUID_LIBRARY
         $ENV{LIQUID_DIR}/lib
         ${PC_LIQUID_LIBDIR}
         ${PC_LIQUID_LIBRARY_DIRS}
+        /opt/homebrew/lib
+        /opt/local/lib
+        /usr/lib
+        /usr/local/lib
 )
 
 include(FindPackageHandleStandardArgs)
