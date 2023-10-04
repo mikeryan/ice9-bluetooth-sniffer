@@ -1,44 +1,68 @@
-# - Find HACKRF
+# - Find LIBHACKRF
 # Find the native HACKRF includes and library
 # This module defines
-#  HACKRF_INCLUDE_DIR, where to find hackrf.h, etc.
-#  HACKRF_LIBRARIES, the libraries needed to use HACKRF.
-#  HACKRF_FOUND, If false, do not try to use HACKRF.
+#  LIBHACKRF_INCLUDE_DIR, where to find hackrf.h, etc.
+#  LIBHACKRF_LIBRARIES, the libraries needed to use HACKRF.
+#  LIBHACKRF_FOUND, If false, do not try to use HACKRF.
 # also defined, but not for general use are
-#  HACKRF_LIBRARY, where to find the HACKRF library.
+#  LIBHACKRF_LIBRARY, where to find the HACKRF library.
 
-FIND_PATH(HACKRF_INCLUDE_DIR hackrf.h
-        ${HACKRF_DIR}/include/libhackrf
-        /opt/homebrew/include/libhackrf
-        /opt/local/include/libhackrf
-        /home/linuxbrew/.linuxbrew/include/libhackrf
-        /usr/include/libhackrf
-        /usr/local/include/libhackrf
+find_package(PkgConfig)
+pkg_check_modules(PC_LIBHACKRF QUIET libhackrf)
+
+find_path(LIBHACKRF_INCLUDE_DIR
+    NAMES hackrf.h
+    HINTS
+        $ENV{LIBHACKRF_DIR}/include
+        ${PC_LIBHACKRF_INCLUDEDIR}
+        ${PC_LIBHACKRF_INCLUDE_DIRS}
+        /opt/homebrew/include
+        /opt/local/include
+        /home/linuxbrew/.linuxbrew/include
+        /usr/include
+        /usr/local/include
+     PATH_SUFFIXES libhackrf
 )
 
-FIND_LIBRARY(HACKRF_LIBRARY hackrf)
+find_library(LIBHACKRF_LIBRARY
+    NAMES hackrf
+    HINTS
+        $ENV{LIBHACKRF_DIR}/lib
+        ${PC_LIBHACKRF_LIBDIR}
+        ${PC_LIBHACKRF_LIBRARY_DIRS}
+        /opt/homebrew/lib
+        /opt/local/lib
+        /usr/lib
+        /usr/local/lib
+)
 
-IF (HACKRF_LIBRARY AND HACKRF_INCLUDE_DIR)
-    SET(HACKRF_LIBRARIES ${HACKRF_LIBRARY})
-    SET(HACKRF_FOUND "YES")
-ELSE (HACKRF_LIBRARY AND HACKRF_INCLUDE_DIR)
-    SET(HACKRF_FOUND "NO")
-ENDIF (HACKRF_LIBRARY AND HACKRF_INCLUDE_DIR)
+include(FindPackageHandleStandardArgs)
+find_package_handle_standard_args(HackRF DEFAULT_MSG LIBHACKRF_LIBRARY LIBHACKRF_INCLUDE_DIR)
 
-IF (HACKRF_FOUND)
-    IF (NOT HACKRF_FIND_QUIETLY)
-        MESSAGE(STATUS "Found HackRF: ${HACKRF_LIBRARIES}")
-    ENDIF (NOT HACKRF_FIND_QUIETLY)
-ELSE (HACKRF_FOUND)
-    IF (HACKRF_FIND_REQUIRED)
-        MESSAGE(FATAL_ERROR "Could not find HackRF library")
-    ENDIF (HACKRF_FIND_REQUIRED)
-ENDIF (HACKRF_FOUND)
+if(LIBHACKRF_LIBRARY AND HACKRF_INCLUDE_DIR)
+    set(LIBHACKRF_LIBRARIES ${LIBHACKRF_LIBRARY})
+    set(LIBHACKRF_FOUND "YES")
+else (LIBHACKRF_LIBRARY AND HACKRF_INCLUDE_DIR)
+    set(LIBHACKRF_FOUND "NO")
+endif(LIBHACKRF_LIBRARY AND HACKRF_INCLUDE_DIR)
+
+if(LIBHACKRF_FOUND)
+    if(NOT HACKRF_FIND_QUIETLY)
+        message(STATUS "Found HackRF: ${LIBHACKRF_LIBRARIES}")
+    endif(NOT HACKRF_FIND_QUIETLY)
+else (LIBHACKRF_FOUND)
+    if(HACKRF_FIND_REQUIRED)
+        message(FATAL_ERROR "Could not find HackRF library")
+    endif(HACKRF_FIND_REQUIRED)
+endif(LIBHACKRF_FOUND)
 
 # Deprecated declarations.
-GET_FILENAME_COMPONENT (NATIVE_HACKRF_LIB_PATH ${HACKRF_LIBRARY} PATH)
+get_filename_component(NATIVE_LIBHACKRF_LIB_PATH ${LIBHACKRF_LIBRARY} PATH)
 
-MARK_AS_ADVANCED(
-        HACKRF_LIBRARY
-        HACKRF_INCLUDE_DIR
+mark_as_advanced(
+        LIBHACKRF_LIBRARY
+        LIBHACKRF_INCLUDE_DIR
 )
+
+set(LIBHACKRF_INCLUDE_DIRS ${LIBHACKRF_INCLUDE_DIR})
+set(LIBHACKRF_LIBRARIES ${LIBHACKRF_LIBRARY})

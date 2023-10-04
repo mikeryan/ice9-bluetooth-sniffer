@@ -1,43 +1,66 @@
-# - Find BLADERF
-# Find the native BLADERF includes and library
+# - Find LIBBLADERF
+# Find the native LIBBLADERF includes and library
 # This module defines
-#  BLADERF_INCLUDE_DIR, where to find bladerf.h, etc.
-#  BLADERF_LIBRARIES, the libraries needed to use BLADERF.
-#  BLADERF_FOUND, If false, do not try to use BLADERF.
+#  LIBBLADERF_INCLUDE_DIR, where to find bladerf.h, etc.
+#  LIBBLADERF_LIBRARIES, the libraries needed to use LIBBLADERF.
+#  LIBBLADERF_FOUND, If false, do not try to use LIBBLADERF.
 # also defined, but not for general use are
-#  BLADERF_LIBRARY, where to find the BLADERF library.
+#  LIBBLADERF_LIBRARY, where to find LIBBLADERF.
 
-FIND_PATH(BLADERF_INCLUDE_DIR libbladeRF.h
-        ${BLADERF_DIR}/include
+find_package(PkgConfig)
+pkg_check_modules(PC_LIBHACKRF QUIET libbladeRF)
+
+find_path(LIBBLADERF_INCLUDE_DIR
+    NAMES libbladeRF.h
+    HINTS
+        ${LIBBLADERF_DIR}/include
+        ${PC_LIBBLADERF_INCLUDEDIR}
+        ${PC_LIBBLADERF_INCLUDE_DIRS}
         /opt/homebrew/include
         /opt/local/include
         /usr/include
         /usr/local/include
 )
 
-FIND_LIBRARY(BLADERF_LIBRARY bladeRF)
+find_library(LIBBLADERF_LIBRARY
+    NAMES bladeRF
+    HINTS
+        $ENV{LIBBLADERF_DIR}/lib
+        ${PC_LIBBLADERF_LIBDIR}
+        ${PC_LIBBLADERF_LIBRARY_DIRS}
+        /opt/homebrew/lib
+        /opt/local/lib
+        /usr/lib
+        /usr/local/lib
+)
 
-IF (BLADERF_LIBRARY AND BLADERF_INCLUDE_DIR)
-    SET(BLADERF_LIBRARIES ${BLADERF_LIBRARY})
-    SET(BLADERF_FOUND "YES")
-ELSE (BLADERF_LIBRARY AND BLADERF_INCLUDE_DIR)
-    SET(BLADERF_FOUND "NO")
-ENDIF (BLADERF_LIBRARY AND BLADERF_INCLUDE_DIR)
+include(FindPackageHandleStandardArgs)
+find_package_handle_standard_args(BladeRF DEFAULT_MSG LIBBLADERF_LIBRARY LIBBLADERF_INCLUDE_DIR)
 
-IF (BLADERF_FOUND)
-    IF (NOT BLADERF_FIND_QUIETLY)
-        MESSAGE(STATUS "Found bladeRF: ${BLADERF_LIBRARIES}")
-    ENDIF (NOT BLADERF_FIND_QUIETLY)
-ELSE (BLADERF_FOUND)
-    IF (BLADERF_FIND_REQUIRED)
-        MESSAGE(FATAL_ERROR "Could not find bladeRF library")
-    ENDIF (BLADERF_FIND_REQUIRED)
-ENDIF (BLADERF_FOUND)
+if (LIBBLADERF_LIBRARY AND LIBBLADERF_INCLUDE_DIR)
+    set(LIBBLADERF_LIBRARIES ${LIBBLADERF_LIBRARY})
+    set(LIBBLADERF_FOUND "YES")
+else (LIBBLADERF_LIBRARY AND LIBBLADERF_INCLUDE_DIR)
+    set(LIBBLADERF_FOUND "NO")
+endif (LIBBLADERF_LIBRARY AND LIBBLADERF_INCLUDE_DIR)
+
+if (LIBBLADERF_FOUND)
+    if (NOT LIBBLADERF_FIND_QUIETLY)
+        message(STATUS "Found bladeRF: ${LIBBLADERF_LIBRARIES}")
+    endif (NOT LIBBLADERF_FIND_QUIETLY)
+else (LIBBLADERF_FOUND)
+    if (LIBBLADERF_FIND_REQUIRED)
+        message(FATAL_ERROR "Could not find bladeRF library")
+    endif (LIBBLADERF_FIND_REQUIRED)
+endif (LIBBLADERF_FOUND)
 
 # Deprecated declarations.
-GET_FILENAME_COMPONENT (NATIVE_BLADERF_LIB_PATH ${BLADERF_LIBRARY} PATH)
+get_filename_component(NATIVE_LIBBLADERF_LIB_PATH ${LIBBLADERF_LIBRARY} PATH)
 
-MARK_AS_ADVANCED(
-        BLADERF_LIBRARY
-        BLADERF_INCLUDE_DIR
+mark_as_advanced(
+        LIBBLADERF_LIBRARY
+        LIBBLADERF_INCLUDE_DIR
 )
+
+set(LIBBLADERF_INCLUDE_DIRS ${LIBBLADERF_INCLUDE_DIR})
+set(LIBBLADERF_LIBRARIES ${LIBBLADERF_LIBRARY})

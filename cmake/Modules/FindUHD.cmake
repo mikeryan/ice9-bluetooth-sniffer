@@ -7,43 +7,60 @@
 # also defined, but not for general use are
 #  UHD_LIBRARY, where to find the UHD library.
 
-FIND_PATH(UHD_INCLUDE_DIR uhd/config.hpp
+find_package(PkgConfig)
+pkg_check_modules(PC_UHD QUIET uhd)
+
+find_path(UHD_INCLUDE_DIR
+    NAMES uhd/config.hpp
+    HINTS
         ${UHD_DIR}/include
+        ${PC_UHD_INCLUDEDIR}
+        ${PC_UHD_INCLUDE_DIRS}
         /opt/homebrew/include
         /opt/local/include
         /usr/include
         /usr/local/include
 )
 
-FIND_LIBRARY(UHD_LIBRARY uhd
+find_library(UHD_LIBRARY
+    NAMES uhd
+    HINTS
         ${UHD_DIR}/lib
+        ${PC_UHD_LIBDIR}
+        ${PC_UHD_LIBRARY_DIRS}
         /opt/homebrew/lib
         /opt/local/lib
         /usr/lib
         /usr/local/lib
 )
 
-IF (UHD_LIBRARY AND UHD_INCLUDE_DIR)
-    SET(UHD_LIBRARIES ${UHD_LIBRARY})
-    SET(UHD_FOUND "YES")
-ELSE (UHD_LIBRARY AND UHD_INCLUDE_DIR)
-    SET(UHD_FOUND "NO")
-ENDIF (UHD_LIBRARY AND UHD_INCLUDE_DIR)
+include(FindPackageHandleStandardArgs)
+find_package_handle_standard_args(UHD DEFAULT_MSG UHD_LIBRARY UHD_INCLUDE_DIR)
 
-IF (UHD_FOUND)
-    IF (NOT UHD_FIND_QUIETLY)
-        MESSAGE(STATUS "Found UHD: ${UHD_LIBRARIES}")
-    ENDIF (NOT UHD_FIND_QUIETLY)
-ELSE (UHD_FOUND)
-    IF (UHD_FIND_REQUIRED)
-        MESSAGE(FATAL_ERROR "Could not find UHD library")
-    ENDIF (UHD_FIND_REQUIRED)
-ENDIF (UHD_FOUND)
+if (UHD_LIBRARY AND UHD_INCLUDE_DIR)
+    set(UHD_LIBRARIES ${UHD_LIBRARY})
+    set(UHD_FOUND "YES")
+else (UHD_LIBRARY AND UHD_INCLUDE_DIR)
+    set(UHD_FOUND "NO")
+endif (UHD_LIBRARY AND UHD_INCLUDE_DIR)
+
+if (UHD_FOUND)
+    if (NOT UHD_FIND_QUIETLY)
+        message(STATUS "Found UHD: ${UHD_LIBRARIES}")
+    endif (NOT UHD_FIND_QUIETLY)
+else (UHD_FOUND)
+    if (UHD_FIND_REQUIRED)
+        message(FATAL_ERROR "Could not find UHD library")
+    endif (UHD_FIND_REQUIRED)
+endif (UHD_FOUND)
 
 # Deprecated declarations.
-GET_FILENAME_COMPONENT (NATIVE_UHD_LIB_PATH ${UHD_LIBRARY} PATH)
+get_filename_component(NATIVE_UHD_LIB_PATH ${UHD_LIBRARY} PATH)
 
-MARK_AS_ADVANCED(
+mark_as_advanced(
         UHD_LIBRARY
         UHD_INCLUDE_DIR
 )
+
+set(UHD_INCLUDE_DIRS ${UHD_INCLUDE_DIR})
+set(UHD_LIBRARIES ${UHD_LIBRARY})
