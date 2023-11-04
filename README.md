@@ -33,6 +33,14 @@ on Linux if detected. Use `ice9-bluetooth --install` to install the
 binary into your local extcap dir (`$HOME/.config/wireshark/extcap`). An
 `uninstall` target is also provided as a convenience.
 
+## Building with Docker
+Run the following command if you need to build the binary from a Docker container
+
+    docker build -o build .
+
+A `build` folder will appear with the compiled ice9-bluetooth binary. Please note that you will need to 
+have the relevant libraries (e.g., libhackrf) installed on the intended system to run the binary correctly.
+
 ## Running
 
 This tool is primarily meant to be run from within Wireshark. That said,
