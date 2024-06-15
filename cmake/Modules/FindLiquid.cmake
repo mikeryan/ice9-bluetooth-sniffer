@@ -16,6 +16,7 @@ find_path(LIQUID_INCLUDE_DIR
         ${LIQUID_DIR}/include
         ${PC_LIQUID_INCLUDEDIR}
         ${PC_LIQUID_INCLUDE_DIRS}
+        ${PYBOMBS_PREFIX}/include/liquid
         /opt/homebrew/include
         /home/linuxbrew/.linuxbrew/include
         /opt/local/include
@@ -28,6 +29,7 @@ find_library(LIQUID_LIBRARY
     NAMES liquid
     HINTS
         $ENV{LIQUID_DIR}/lib
+        ${PYBOMBS_PREFIX}/lib
         ${PC_LIQUID_LIBDIR}
         ${PC_LIQUID_LIBRARY_DIRS}
         /opt/homebrew/lib

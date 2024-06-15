@@ -22,6 +22,7 @@
 
 #include "hackrf.h"
 #include "bladerf.h"
+#include "soapysdr.h"
 #include "pcap.h"
 #include "usrp.h"
 
@@ -29,6 +30,7 @@ extern FILE *in;
 extern char *serial;
 extern char *usrp_serial;
 extern int bladerf_num;
+extern int soapysdr_num;
 
 extern float samp_rate;
 extern unsigned channels;
@@ -86,6 +88,7 @@ static void _print_interfaces(void) {
     hackrf_list();
     bladerf_list();
     usrp_list();
+    soapysdr_list();
     exit(0);
 }
 
@@ -148,8 +151,10 @@ void parse_options(int argc, char **argv) {
                     bladerf_num = atoi(optarg + strlen("bladerf"));
                 else if (strstr(optarg, "usrp-") == optarg)
                     usrp_serial = strdup(usrp_get_serial(optarg));
+                else if (strstr(optarg, "soapy-") == optarg)
+                    soapysdr_num = atoi(optarg + strlen("soapy-"));
                 else
-                    errx(1, "invalid interface, must start with \"hackrf-\" or \"bladerf\"");
+                    errx(1, "invalid interface, must start with \"hackrf-\" or \"bladerf\" or \"soapy-\"");
                 break;
 
             case 'w':

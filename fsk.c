@@ -51,7 +51,7 @@ static int cfo_median(fsk_demod_t *fsk, float *demod, unsigned burst_len, float 
 
     // find the median of the positive and negative points
     for (i = 8; i < 8 + median_size(); ++i) {
-        if (fabsf(demod[i]) > max_freq_offset)
+        if (fabsf((float)demod[i]) > max_freq_offset)
             return 0;
         if (demod[i] > 0)
             fsk->pos_points[pos_count++] = demod[i];
