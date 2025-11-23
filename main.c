@@ -382,10 +382,10 @@ void *burst_processor_thread(void *arg) {
 
         if (burst->packet.demod != NULL && burst->packet.bits != NULL) {
             uint32_t lap = 0xffffffff, aa = 0xffffffff;
-            bluetooth_detect(burst->packet.bits, burst->packet.bits_len, burst->freq, burst->timestamp, &lap, &aa);
+            bluetooth_detect(burst->packet.bits, burst->packet.bits_len, burst->freq, burst->rssi_db, burst->noise_db, burst->timestamp, &lap, &aa);
 
             if (verbose) {
-                printf("burst %4u-%04u ", burst->freq, burst->num);
+                printf("burst %4u-%04u, %d samps, rssi %f dB, noise %f dB ", burst->freq, burst->num, burst->len, burst->rssi_db, burst->noise_db);
                 printf("cfo %f deviation %f ", burst->packet.cfo, burst->packet.deviation);
                 if (lap != 0xffffffff)
                     printf("lap %06x", lap);
