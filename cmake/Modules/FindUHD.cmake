@@ -14,6 +14,7 @@ find_path(UHD_INCLUDE_DIR
     NAMES uhd/config.hpp
     HINTS
         ${UHD_DIR}/include
+        ${PYBOMBS_PREFIX}/include
         ${PC_UHD_INCLUDEDIR}
         ${PC_UHD_INCLUDE_DIRS}
         /opt/homebrew/include
@@ -26,6 +27,7 @@ find_library(UHD_LIBRARY
     NAMES uhd
     HINTS
         ${UHD_DIR}/lib
+        ${PYBOMBS_PREFIX}/lib
         ${PC_UHD_LIBDIR}
         ${PC_UHD_LIBRARY_DIRS}
         /opt/homebrew/lib

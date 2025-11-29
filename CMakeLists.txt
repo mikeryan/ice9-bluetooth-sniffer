@@ -1,5 +1,13 @@
 cmake_minimum_required(VERSION 3.9)
 project(ice9-bluetooth)
+INCLUDE(FindPkgConfig)
+
+# Install to PyBOMBS target prefix if defined
+if(DEFINED ENV{PYBOMBS_PREFIX})
+    set(CMAKE_INSTALL_PREFIX $ENV{PYBOMBS_PREFIX})
+    set(PYBOMBS_PREFIX $ENV{PYBOMBS_PREFIX})
+    message(STATUS "PyBOMBS installed GNU Radio. Setting CMAKE_INSTALL_PREFIX to $ENV{PYBOMBS_PREFIX}")
+endif()
 
 set (CMAKE_CXX_STANDARD 17)
 
@@ -34,6 +42,7 @@ set(THREADS_PREFER_PTHREAD_FLAG ON)
 find_package(Threads REQUIRED)
 
 # Add required dependencies
+find_package(SoapySDR REQUIRED)
 find_package(HackRF REQUIRED)
 find_package(BladeRF REQUIRED)
 find_package(UHD REQUIRED)
@@ -70,6 +79,7 @@ if(NOT CMAKE_BUILD_TYPE)
 endif(NOT CMAKE_BUILD_TYPE)
 
 include_directories(${PROJECT_SOURCE_DIR})
+include_directories(${SOAPYSDR_INCLUDE_DIR})
 include_directories(${LIBHACKRF_INCLUDE_DIR})
 include_directories(${LIBBLADERF_INCLUDE_DIR})
 include_directories(${UHD_INCLUDE_DIR})
@@ -81,6 +91,7 @@ set(SOURCES
     ${PROJECT_SOURCE_DIR}/btbb/btbb.c
     ${PROJECT_SOURCE_DIR}/burst_catcher.c
     ${PROJECT_SOURCE_DIR}/fsk.c
+    ${PROJECT_SOURCE_DIR}/soapysdr.c
     ${PROJECT_SOURCE_DIR}/hackrf.c
     ${PROJECT_SOURCE_DIR}/hash.c
     ${PROJECT_SOURCE_DIR}/help.c
@@ -91,6 +102,8 @@ set(SOURCES
     ${PROJECT_SOURCE_DIR}/window.c
 
     ${PROJECT_SOURCE_DIR}/main.c
+        soapysdr.c
+        soapysdr.h
 )
 
 if(USE_VKFFT)
@@ -130,6 +143,7 @@ target_link_libraries(ice9-bluetooth
     PRIVATE Threads::Threads
     m
     ${LIBHACKRF_LIBRARIES}
+    ${SOAPYSDR_LIBRARIES}
     ${LIBBLADERF_LIBRARIES}
     ${UHD_LIBRARIES}
     ${LIQUID_LIBRARIES}
