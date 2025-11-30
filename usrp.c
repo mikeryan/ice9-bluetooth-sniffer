@@ -6,7 +6,7 @@
 #include <signal.h>
 #include <stdio.h>
 #include <string.h>
-
+#include <complex.h>
 #include <uhd.h>
 
 #include "sdr.h"
@@ -101,7 +101,7 @@ void usrp_list(void) {
         if (type == NULL || serial == NULL)
             continue;
 
-        printf("interface {value=usrp-%s-%s}{display=ICE9 Bluetooth%s}\n", product, serial,
+        printf("interface {value=usrp-%s (%s)}{display=ICE9 Bluetooth%s}\n", product, serial,
                 strcmp(type, "b200") == 0 ? "" : " (unsupported)");
 
         free(usrp_info);
@@ -156,8 +156,8 @@ void *usrp_stream_thread(void *arg) {
     void *buf;
     uhd_rx_metadata_error_code_t error_code;
     uhd_stream_args_t stream_args = {
-        .cpu_format = "fc32",
-        .otw_format = "sc16",
+        .cpu_format = "sc8",
+        .otw_format = "sc8",
         .args = "",
         .channel_list = &channel,
         .n_channels = 1
