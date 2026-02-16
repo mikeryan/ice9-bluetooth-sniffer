@@ -19,6 +19,10 @@ const float bt = 0.25f; // agc bandwidth
 
 #define MAX_BURST_SIZE 32768
 
+// grab the RSSI once AGC has stabilized a handful of samples into the
+// burst, but not too soon before the burst ends!
+#define BURST_RSSI_OFFSET 80
+
 void burst_catcher_create(burst_catcher_t *c, unsigned freq) {
     memset(c, 0, sizeof(*c));
     c->freq = freq;
@@ -47,10 +51,13 @@ int burst_catcher_execute(burst_catcher_t *c, float complex *sample, burst_t *bu
         }
         if (c->burst_len < MAX_BURST_SIZE)
             c->burst[c->burst_len++] = *sample;
+        if (c->burst_len == BURST_RSSI_OFFSET)
+            c->burst_rssi = agc_crcf_get_rssi(c->agc);
     } else if (agc_crcf_squelch_get_status(c->agc) == LIQUID_AGC_SQUELCH_RISE) {
         c->burst = malloc(sizeof(float complex) * BURST_START_SIZE);
         c->burst_buf_size = BURST_START_SIZE;
         c->burst_len = 0;
+        c->burst_rssi = -127;
         clock_gettime(CLOCK_REALTIME, &c->timestamp);
     } else if (agc_crcf_squelch_get_status(c->agc) == LIQUID_AGC_SQUELCH_TIMEOUT) {
         burst_out->burst = c->burst;
@@ -58,6 +65,9 @@ int burst_catcher_execute(burst_catcher_t *c, float complex *sample, burst_t *bu
         burst_out->num = c->burst_num;
         burst_out->freq = c->freq;
         burst_out->timestamp = c->timestamp;
+        burst_out->rssi_db = c->burst_rssi;
+        // grab the noise level after the burst has ended
+        burst_out->noise_db = agc_crcf_get_rssi(c->agc);
         c->burst = NULL;
         c->burst_len = 0;
         c->burst_buf_size = 0;
