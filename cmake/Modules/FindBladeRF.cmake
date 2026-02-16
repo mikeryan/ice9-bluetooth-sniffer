@@ -14,6 +14,7 @@ find_path(LIBBLADERF_INCLUDE_DIR
     NAMES libbladeRF.h
     HINTS
         ${LIBBLADERF_DIR}/include
+        ${PYBOMBS_PREFIX}/include
         ${PC_LIBBLADERF_INCLUDEDIR}
         ${PC_LIBBLADERF_INCLUDE_DIRS}
         /opt/homebrew/include
@@ -27,6 +28,7 @@ find_library(LIBBLADERF_LIBRARY
     HINTS
         $ENV{LIBBLADERF_DIR}/lib
         ${PC_LIBBLADERF_LIBDIR}
+        ${PYBOMBS_PREFIX}/lib
         ${PC_LIBBLADERF_LIBRARY_DIRS}
         /opt/homebrew/lib
         /opt/local/lib

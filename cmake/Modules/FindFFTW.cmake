@@ -64,7 +64,7 @@ if( FFTW_ROOT )
     find_library(
         FFTW_DOUBLE_LIB
         NAMES "fftw3" libfftw3-3
-        PATHS ${FFTW_ROOT}
+        PATHS ${FFTW_ROOT} ${PYBOMBS_PREFIX}
         PATH_SUFFIXES "lib" "lib64"
         NO_DEFAULT_PATH
         )

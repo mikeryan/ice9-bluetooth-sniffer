@@ -16,6 +16,7 @@ find_path(LIBHACKRF_INCLUDE_DIR
         $ENV{LIBHACKRF_DIR}/include
         ${PC_LIBHACKRF_INCLUDEDIR}
         ${PC_LIBHACKRF_INCLUDE_DIRS}
+        ${PYBOMBS_PREFIX}/include/libhackrf
         /opt/homebrew/include
         /opt/local/include
         /home/linuxbrew/.linuxbrew/include
@@ -28,6 +29,7 @@ find_library(LIBHACKRF_LIBRARY
     NAMES hackrf
     HINTS
         $ENV{LIBHACKRF_DIR}/lib
+        ${PYBOMBS_PREFIX}/lib
         ${PC_LIBHACKRF_LIBDIR}
         ${PC_LIBHACKRF_LIBRARY_DIRS}
         /opt/homebrew/lib
