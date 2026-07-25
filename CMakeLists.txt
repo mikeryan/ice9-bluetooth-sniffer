@@ -55,8 +55,8 @@ endif()
 
 # Generate header for help
 add_custom_command(
-  OUTPUT "${PROJECT_SOURCE_DIR}/help.h"
-  COMMAND xxd -i help.txt help.h
+  OUTPUT "${CMAKE_CURRENT_BINARY_DIR}/help.h"
+  COMMAND xxd -i help.txt "${CMAKE_CURRENT_BINARY_DIR}/help.h"
   DEPENDS ${PROJECT_SOURCE_DIR}/help.txt
   WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}
   COMMENT "Generate Help Header"
@@ -70,6 +70,7 @@ if(NOT CMAKE_BUILD_TYPE)
 endif(NOT CMAKE_BUILD_TYPE)
 
 include_directories(${PROJECT_SOURCE_DIR})
+include_directories(${CMAKE_CURRENT_BINARY_DIR})
 include_directories(${LIBHACKRF_INCLUDE_DIR})
 include_directories(${LIBBLADERF_INCLUDE_DIR})
 include_directories(${UHD_INCLUDE_DIR})
@@ -101,7 +102,7 @@ endif()
 
 add_executable(ice9-bluetooth
     ${SOURCES}
-    help.h
+    ${CMAKE_CURRENT_BINARY_DIR}/help.h
 )
 
 if(USE_VKFFT)
