@@ -49,6 +49,28 @@ static void test_fsk_demod_init_destroy(void) {
     printf("[PASS] test_fsk_demod_init_destroy\n");
 }
 
+static void test_fsk_short_burst_rejection(void) {
+    fsk_demod_t fsk;
+    fsk_demod_init(&fsk);
+
+    // Short burst < 8 + median_size() (which is 8 + 2 * 64 = 136)
+    unsigned burst_len = 50;
+    float complex burst[50];
+    memset(burst, 0, sizeof(burst));
+
+    packet_t pkt;
+    memset(&pkt, 0, sizeof(pkt));
+
+    fsk_demod(&fsk, burst, burst_len, 2441, &pkt);
+
+    // Should reject short burst without allocating packet output pointers
+    assert(pkt.demod == NULL);
+    assert(pkt.bits == NULL);
+
+    fsk_demod_destroy(&fsk);
+    printf("[PASS] test_fsk_short_burst_rejection\n");
+}
+
 static void test_fsk_demod_synthetic_burst(void) {
     fsk_demod_t fsk;
     fsk_demod_init(&fsk);
@@ -89,6 +111,7 @@ int main(void) {
     printf("===========================================\n");
     test_fsk_ewma_and_silence();
     test_fsk_demod_init_destroy();
+    test_fsk_short_burst_rejection();
     test_fsk_demod_synthetic_burst();
     printf("===========================================\n");
     printf(" All fsk tests passed successfully!        \n");

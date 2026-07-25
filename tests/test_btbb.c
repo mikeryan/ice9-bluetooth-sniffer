@@ -105,6 +105,23 @@ static void test_multi_bit_error_exceeds_max_errors(void) {
     printf("[PASS] test_multi_bit_error_exceeds_max_errors\n"); fflush(stdout);
 }
 
+static void test_multiple_access_codes_in_stream(void) {
+    char stream[300];
+    memset(stream, 0, sizeof(stream));
+
+    // Place two valid syncwords separated by padding
+    uint64_to_air_symbols(VALID_SYNCWORD, 64, &stream[10]);
+    uint64_to_air_symbols(VALID_SYNCWORD, 64, &stream[150]);
+
+    uint32_t lap1 = btbb_find_ac(stream, sizeof(stream), 0);
+    assert(lap1 == EXPECTED_LAP);
+
+    uint32_t lap2 = btbb_find_ac(stream + 100, sizeof(stream) - 100, 0);
+    assert(lap2 == EXPECTED_LAP);
+
+    printf("[PASS] test_multiple_access_codes_in_stream\n"); fflush(stdout);
+}
+
 int main(void) {
     printf("======================================\n");
     printf(" Running btbb comprehensive test suite \n");
@@ -116,6 +133,7 @@ int main(void) {
     test_single_bit_error_without_syndrome_map();
     test_single_bit_error_with_syndrome_map();
     test_multi_bit_error_exceeds_max_errors();
+    test_multiple_access_codes_in_stream();
     printf("======================================\n");
     printf(" All btbb tests passed successfully!  \n");
     printf("======================================\n"); fflush(stdout);

@@ -21,6 +21,22 @@ typedef struct __attribute__((packed)) {
     uint32_t network;
 } expected_pcap_hdr_t;
 
+typedef struct __attribute__((packed)) {
+    uint32_t ts_sec;
+    uint32_t ts_usec;
+    uint32_t incl_len;
+    uint32_t orig_len;
+} expected_pcaprec_hdr_t;
+
+typedef struct __attribute__((packed)) {
+    uint8_t rf_channel;
+    int8_t signal_power;
+    int8_t noise_power;
+    uint8_t aa_offenses;
+    uint32_t ref_aa;
+    uint16_t flags;
+} expected_pcap_le_header_t;
+
 static void test_pcap_write_and_parse(void) {
     const char *test_file = "test_output.pcap";
     pcap_t *p = pcap_open((char*)test_file);
@@ -28,7 +44,7 @@ static void test_pcap_write_and_parse(void) {
 
     ble_packet_t *pkt = malloc(sizeof(ble_packet_t) + 4);
     memset(pkt, 0, sizeof(*pkt) + 4);
-    pkt->freq = 2402;
+    pkt->freq = 2402; // (2402 - 2402) / 2 = channel 0
     pkt->rssi_db = -50;
     pkt->noise_db = -90;
     pkt->timestamp.tv_sec = 1600000000;
@@ -44,7 +60,7 @@ static void test_pcap_write_and_parse(void) {
     free(pkt);
     pcap_close(p);
 
-    // Read written file back and verify PCAP header and record fields
+    // Read written file back and verify PCAP header, record header, LE header, and payload
     FILE *f = fopen(test_file, "rb");
     assert(f != NULL);
 
@@ -54,6 +70,23 @@ static void test_pcap_write_and_parse(void) {
     assert(hdr.version_major == 2);
     assert(hdr.version_minor == 4);
     assert(hdr.network == 256); // DLT_BLUETOOTH_LE_LL_WITH_PHDR
+
+    expected_pcaprec_hdr_t rechdr;
+    assert(fread(&rechdr, sizeof(rechdr), 1, f) == 1);
+    assert(rechdr.ts_sec == 1600000000);
+    assert(rechdr.ts_usec == 500000);
+    assert(rechdr.incl_len == 4 + sizeof(expected_pcap_le_header_t));
+    assert(rechdr.orig_len == 4 + sizeof(expected_pcap_le_header_t));
+
+    expected_pcap_le_header_t le_hdr;
+    assert(fread(&le_hdr, sizeof(le_hdr), 1, f) == 1);
+    assert(le_hdr.rf_channel == 0);
+    assert(le_hdr.signal_power == -50);
+    assert(le_hdr.noise_power == -90);
+
+    uint8_t payload[4];
+    assert(fread(payload, 1, 4, f) == 4);
+    assert(payload[0] == 0xAA && payload[1] == 0xBB && payload[2] == 0xCC && payload[3] == 0xDD);
 
     fclose(f);
     remove(test_file);

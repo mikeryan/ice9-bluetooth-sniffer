@@ -15,7 +15,7 @@ void usage(int exitcode) { (void)exitcode; }
 void hackrf_list(void) {}
 void bladerf_list(void) {}
 void usrp_list(void) {}
-char *usrp_get_serial(const char *interface_name) { (void)interface_name; return "123456"; }
+char *usrp_get_serial(const char *interface_name) { (void)interface_name; return "31215"; }
 
 static void test_all_channels_flag(void) {
     sniffer_config_t cfg;
@@ -41,6 +41,29 @@ static void test_custom_channels_and_freq(void) {
     assert(cfg.live == 1);
     config_free(&cfg);
     printf("[PASS] test_custom_channels_and_freq\n");
+}
+
+static void test_sdr_interface_selection(void) {
+    sniffer_config_t cfg;
+    char *argv1[] = { "ice9-bluetooth", "-a", "-i", "hackrf-12345", "--capture", NULL };
+    int res = parse_options(5, argv1, &cfg);
+    assert(res == 0);
+    assert(cfg.serial != NULL && strcmp(cfg.serial, "12345") == 0);
+    config_free(&cfg);
+
+    char *argv2[] = { "ice9-bluetooth", "-a", "-i", "bladerf0", "--capture", NULL };
+    res = parse_options(5, argv2, &cfg);
+    assert(res == 0);
+    assert(cfg.bladerf_num == 0);
+    config_free(&cfg);
+
+    char *argv3[] = { "ice9-bluetooth", "-a", "-i", "usrp-31215", "--capture", NULL };
+    res = parse_options(5, argv3, &cfg);
+    assert(res == 0);
+    assert(cfg.usrp_serial != NULL && strcmp(cfg.usrp_serial, "31215") == 0);
+    config_free(&cfg);
+
+    printf("[PASS] test_sdr_interface_selection\n");
 }
 
 static void test_invalid_center_freq(void) {
@@ -76,6 +99,7 @@ int main(void) {
     printf("===========================================\n");
     test_all_channels_flag();
     test_custom_channels_and_freq();
+    test_sdr_interface_selection();
     test_invalid_center_freq();
     test_invalid_channels_not_divisible_by_4();
     test_extcap_interfaces_flag();

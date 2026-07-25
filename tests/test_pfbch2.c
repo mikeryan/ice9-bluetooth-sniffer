@@ -57,7 +57,16 @@ static void test_pfbch2_execute(void) {
 
     pfbch2_execute(&pfb, x, y);
 
-    // verify channelizer executed without error and output memory is updated
+    // execute second frame to push samples through filterbank window
+    pfbch2_execute(&pfb, x, y);
+
+    // verify output buffer is updated and non-zero
+    int non_zero = 0;
+    for (int i = 0; i < 16; i++) {
+        if (y[i] != 0) non_zero = 1;
+    }
+    assert(non_zero == 1);
+
     pfbch2_release(&pfb);
     free(h_float);
     printf("[PASS] test_pfbch2_execute\n");
