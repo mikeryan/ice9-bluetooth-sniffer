@@ -35,13 +35,13 @@ static void test_window_push(void) {
 
     window_push(&w, sample1);
     unsigned idx1 = w.read_index;
-    assert(w.r[idx1 + w.len - 1] == (10 << 8));
-    assert(w.i[idx1 + w.len - 1] == (-20 << 8));
+    assert(w.r[idx1 + w.len - 1] == (10 * 256));
+    assert(w.i[idx1 + w.len - 1] == (-20 * 256));
 
     window_push(&w, sample2);
     unsigned idx2 = w.read_index;
-    assert(w.r[idx2 + w.len - 1] == (30 << 8));
-    assert(w.i[idx2 + w.len - 1] == (-40 << 8));
+    assert(w.r[idx2 + w.len - 1] == (30 * 256));
+    assert(w.i[idx2 + w.len - 1] == (-40 * 256));
 
     window_release(&w);
     printf("[PASS] test_window_push\n");

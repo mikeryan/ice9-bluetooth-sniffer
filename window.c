@@ -33,8 +33,8 @@ void window_push(window_t *w, int8_t *v) {
         memmove(w->r, w->r + w->n, (w->len - 1) * sizeof(*w->r));
         memmove(w->i, w->i + w->n, (w->len - 1) * sizeof(*w->i));
     }
-    w->r[w->read_index + w->len - 1] = (int16_t)v[0] << 8;
-    w->i[w->read_index + w->len - 1] = (int16_t)v[1] << 8;
+    w->r[w->read_index + w->len - 1] = (int16_t)((int)v[0] * 256);
+    w->i[w->read_index + w->len - 1] = (int16_t)((int)v[1] * 256);
 }
 
 #if defined(__ARM_NEON) || defined(__ARM_NEON__)
@@ -108,7 +108,7 @@ void window_dotprod(window_t *w, int16_t *b, int16_t *out) {
     int32_t sum_real = 0, sum_imag = 0;
     for (i = 0; i < w->len; ++i) {
         sum_real += w->r[w->read_index + i] * b[i];
-        sum_imag += w->r[w->read_index + i] * b[i];
+        sum_imag += w->i[w->read_index + i] * b[i];
     }
     out[0] = sum_real >> 16;
     out[1] = sum_imag >> 16;
