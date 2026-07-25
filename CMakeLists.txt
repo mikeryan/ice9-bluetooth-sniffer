@@ -189,3 +189,9 @@ add_executable(test_btbb
 target_include_directories(test_btbb PRIVATE ${PROJECT_SOURCE_DIR})
 set_target_properties(test_btbb PROPERTIES C_STANDARD 99)
 add_test(NAME test_btbb COMMAND test_btbb)
+
+add_executable(test_blocking_queue test_blocking_queue.c)
+target_include_directories(test_blocking_queue PRIVATE ${PROJECT_SOURCE_DIR})
+target_link_libraries(test_blocking_queue PRIVATE Threads::Threads)
+set_target_properties(test_blocking_queue PROPERTIES C_STANDARD 11)
+add_test(NAME test_blocking_queue COMMAND test_blocking_queue)
