@@ -67,7 +67,6 @@ set(SOURCES
     ${PROJECT_SOURCE_DIR}/burst_catcher.c
     ${PROJECT_SOURCE_DIR}/fsk.c
     ${PROJECT_SOURCE_DIR}/hackrf.c
-    ${PROJECT_SOURCE_DIR}/hash.c
     ${PROJECT_SOURCE_DIR}/help.c
     ${PROJECT_SOURCE_DIR}/options.c
     ${PROJECT_SOURCE_DIR}/pcap.c
