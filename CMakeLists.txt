@@ -5,15 +5,6 @@ set (CMAKE_CXX_STANDARD 17)
 
 set(CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/cmake/Modules" ${CMAKE_MODULE_PATH})
 
-set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -fno-common -Wall -Wextra -Wno-unused-parameter -std=c99 -Werror=implicit-function-declaration")
-if (UNIX AND NOT APPLE)
-  if (CMAKE_SYSTEM_PROCESSOR MATCHES "arm|ARM")
-    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -mfpu=neon")
-  else()
-    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -msse4.1")
-  endif()
-endif()
-
 set(CMAKE_C_FLAGS_DEBUG "-ggdb3 -g3 -O0 -fsanitize=address")
 set(CMAKE_C_FLAGS_MINSIZEREL "-Os -fsanitize=address")
 set(CMAKE_C_FLAGS_RELWITHDEBINFO "-O3 -ggdb3 -g3")
@@ -127,6 +118,22 @@ else()
   include_directories(${FFTW_INCLUDE_DIR})
 endif()
 
+target_compile_options(ice9-bluetooth PRIVATE
+    -fno-common
+    -Wall
+    -Wextra
+    -Wno-unused-parameter
+    -Werror=implicit-function-declaration
+)
+
+if (UNIX AND NOT APPLE)
+  if (CMAKE_SYSTEM_PROCESSOR MATCHES "arm|ARM")
+    target_compile_options(ice9-bluetooth PRIVATE -mfpu=neon)
+  else()
+    target_compile_options(ice9-bluetooth PRIVATE -msse4.1)
+  endif()
+endif()
+
 target_link_libraries(ice9-bluetooth
     PRIVATE Threads::Threads
     m
@@ -136,8 +143,11 @@ target_link_libraries(ice9-bluetooth
     ${LIQUID_LIBRARIES}
 )
 
-set_property(TARGET ice9-bluetooth PROPERTY C_STANDARD 99)
-set_property(TARGET ice9-bluetooth PROPERTY INTERPROCEDURAL_OPTIMIZATION TRUE)
+set_target_properties(ice9-bluetooth PROPERTIES
+    C_STANDARD 99
+    C_STANDARD_REQUIRED ON
+    INTERPROCEDURAL_OPTIMIZATION TRUE
+)
 
 install(TARGETS ice9-bluetooth DESTINATION bin)
 
