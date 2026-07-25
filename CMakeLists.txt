@@ -48,8 +48,8 @@ endif()
 add_custom_command(
   OUTPUT "${CMAKE_CURRENT_BINARY_DIR}/help.h"
   COMMAND xxd -i help.txt "${CMAKE_CURRENT_BINARY_DIR}/help.h"
-  DEPENDS ${PROJECT_SOURCE_DIR}/help.txt
-  WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}
+  DEPENDS ${PROJECT_SOURCE_DIR}/src/core/help.txt
+  WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}/src/core
   COMMENT "Generate Help Header"
   VERBATIM)
 
@@ -61,20 +61,20 @@ if(NOT CMAKE_BUILD_TYPE)
 endif(NOT CMAKE_BUILD_TYPE)
 
 set(SOURCES
-    ${PROJECT_SOURCE_DIR}/bladerf.c
-    ${PROJECT_SOURCE_DIR}/bluetooth.c
-    ${PROJECT_SOURCE_DIR}/btbb/btbb.c
-    ${PROJECT_SOURCE_DIR}/burst_catcher.c
-    ${PROJECT_SOURCE_DIR}/fsk.c
-    ${PROJECT_SOURCE_DIR}/hackrf.c
-    ${PROJECT_SOURCE_DIR}/help.c
-    ${PROJECT_SOURCE_DIR}/options.c
-    ${PROJECT_SOURCE_DIR}/pcap.c
-    ${PROJECT_SOURCE_DIR}/usrp.c
-    ${PROJECT_SOURCE_DIR}/pfbch2.c
-    ${PROJECT_SOURCE_DIR}/window.c
+    ${PROJECT_SOURCE_DIR}/src/sdr/bladerf.c
+    ${PROJECT_SOURCE_DIR}/src/protocol/bluetooth.c
+    ${PROJECT_SOURCE_DIR}/src/protocol/btbb/btbb.c
+    ${PROJECT_SOURCE_DIR}/src/dsp/burst_catcher.c
+    ${PROJECT_SOURCE_DIR}/src/dsp/fsk.c
+    ${PROJECT_SOURCE_DIR}/src/sdr/hackrf.c
+    ${PROJECT_SOURCE_DIR}/src/core/help.c
+    ${PROJECT_SOURCE_DIR}/src/core/options.c
+    ${PROJECT_SOURCE_DIR}/src/core/pcap.c
+    ${PROJECT_SOURCE_DIR}/src/sdr/usrp.c
+    ${PROJECT_SOURCE_DIR}/src/dsp/pfbch2.c
+    ${PROJECT_SOURCE_DIR}/src/dsp/window.c
 
-    ${PROJECT_SOURCE_DIR}/main.c
+    ${PROJECT_SOURCE_DIR}/src/core/main.c
 )
 
 if(USE_VKFFT)
@@ -89,7 +89,11 @@ add_executable(ice9-bluetooth
 )
 
 target_include_directories(ice9-bluetooth PRIVATE
-    ${PROJECT_SOURCE_DIR}
+    ${PROJECT_SOURCE_DIR}/src/core
+    ${PROJECT_SOURCE_DIR}/src/dsp
+    ${PROJECT_SOURCE_DIR}/src/sdr
+    ${PROJECT_SOURCE_DIR}/src/protocol
+    ${PROJECT_SOURCE_DIR}/src/protocol/btbb
     ${CMAKE_CURRENT_BINARY_DIR}
     ${LIBHACKRF_INCLUDE_DIR}
     ${LIBBLADERF_INCLUDE_DIR}
@@ -183,27 +187,34 @@ endif()
 enable_testing()
 
 set(TEST_SANITIZER_FLAGS "-fsanitize=thread,undefined" "-g" "-fno-omit-frame-pointer" "-fno-sanitize-recover=all")
+set(TEST_INCLUDES
+    ${PROJECT_SOURCE_DIR}/src/core
+    ${PROJECT_SOURCE_DIR}/src/dsp
+    ${PROJECT_SOURCE_DIR}/src/sdr
+    ${PROJECT_SOURCE_DIR}/src/protocol
+    ${PROJECT_SOURCE_DIR}/src/protocol/btbb
+)
 
 add_executable(test_btbb
-    test_btbb.c
-    btbb/btbb.c
+    tests/test_btbb.c
+    src/protocol/btbb/btbb.c
 )
-target_include_directories(test_btbb PRIVATE ${PROJECT_SOURCE_DIR})
+target_include_directories(test_btbb PRIVATE ${TEST_INCLUDES})
 target_compile_options(test_btbb PRIVATE ${TEST_SANITIZER_FLAGS})
 target_link_options(test_btbb PRIVATE ${TEST_SANITIZER_FLAGS})
 set_target_properties(test_btbb PROPERTIES C_STANDARD 99)
 add_test(NAME test_btbb COMMAND test_btbb)
 
-add_executable(test_blocking_queue test_blocking_queue.c)
-target_include_directories(test_blocking_queue PRIVATE ${PROJECT_SOURCE_DIR})
+add_executable(test_blocking_queue tests/test_blocking_queue.c)
+target_include_directories(test_blocking_queue PRIVATE ${TEST_INCLUDES})
 target_link_libraries(test_blocking_queue PRIVATE Threads::Threads)
 target_compile_options(test_blocking_queue PRIVATE ${TEST_SANITIZER_FLAGS})
 target_link_options(test_blocking_queue PRIVATE ${TEST_SANITIZER_FLAGS})
 set_target_properties(test_blocking_queue PROPERTIES C_STANDARD 11)
 add_test(NAME test_blocking_queue COMMAND test_blocking_queue)
 
-add_executable(test_window test_window.c window.c)
-target_include_directories(test_window PRIVATE ${PROJECT_SOURCE_DIR})
+add_executable(test_window tests/test_window.c src/dsp/window.c)
+target_include_directories(test_window PRIVATE ${TEST_INCLUDES})
 target_link_libraries(test_window PRIVATE m)
 target_compile_options(test_window PRIVATE ${TEST_SANITIZER_FLAGS})
 target_link_options(test_window PRIVATE ${TEST_SANITIZER_FLAGS})
@@ -217,8 +228,8 @@ if (UNIX AND NOT APPLE)
 endif()
 add_test(NAME test_window COMMAND test_window)
 
-add_executable(test_pfbch2 test_pfbch2.c pfbch2.c window.c)
-target_include_directories(test_pfbch2 PRIVATE ${PROJECT_SOURCE_DIR})
+add_executable(test_pfbch2 tests/test_pfbch2.c src/dsp/pfbch2.c src/dsp/window.c)
+target_include_directories(test_pfbch2 PRIVATE ${TEST_INCLUDES})
 target_link_libraries(test_pfbch2 PRIVATE m)
 target_compile_options(test_pfbch2 PRIVATE ${TEST_SANITIZER_FLAGS})
 target_link_options(test_pfbch2 PRIVATE ${TEST_SANITIZER_FLAGS})
@@ -232,23 +243,23 @@ if (UNIX AND NOT APPLE)
 endif()
 add_test(NAME test_pfbch2 COMMAND test_pfbch2)
 
-add_executable(test_fsk test_fsk.c fsk.c)
-target_include_directories(test_fsk PRIVATE ${PROJECT_SOURCE_DIR} ${LIQUID_INCLUDE_DIR})
+add_executable(test_fsk tests/test_fsk.c src/dsp/fsk.c)
+target_include_directories(test_fsk PRIVATE ${TEST_INCLUDES} ${LIQUID_INCLUDE_DIR})
 target_link_libraries(test_fsk PRIVATE m ${LIQUID_LIBRARIES})
 target_compile_options(test_fsk PRIVATE ${TEST_SANITIZER_FLAGS})
 target_link_options(test_fsk PRIVATE ${TEST_SANITIZER_FLAGS})
 set_target_properties(test_fsk PROPERTIES C_STANDARD 99)
 add_test(NAME test_fsk COMMAND test_fsk)
 
-add_executable(test_pcap test_pcap.c pcap.c)
-target_include_directories(test_pcap PRIVATE ${PROJECT_SOURCE_DIR})
+add_executable(test_pcap tests/test_pcap.c src/core/pcap.c)
+target_include_directories(test_pcap PRIVATE ${TEST_INCLUDES})
 target_compile_options(test_pcap PRIVATE ${TEST_SANITIZER_FLAGS})
 target_link_options(test_pcap PRIVATE ${TEST_SANITIZER_FLAGS})
 set_target_properties(test_pcap PROPERTIES C_STANDARD 99)
 add_test(NAME test_pcap COMMAND test_pcap)
 
-add_executable(test_options test_options.c options.c pcap.c)
-target_include_directories(test_options PRIVATE ${PROJECT_SOURCE_DIR} ${HACKRF_INCLUDE_DIRS})
+add_executable(test_options tests/test_options.c src/core/options.c src/core/pcap.c)
+target_include_directories(test_options PRIVATE ${TEST_INCLUDES} ${HACKRF_INCLUDE_DIRS})
 target_compile_options(test_options PRIVATE ${TEST_SANITIZER_FLAGS})
 target_link_options(test_options PRIVATE ${TEST_SANITIZER_FLAGS})
 set_target_properties(test_options PROPERTIES C_STANDARD 99)
