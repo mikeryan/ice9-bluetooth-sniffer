@@ -178,3 +178,14 @@ if(NOT TARGET uninstall)
   add_custom_target(uninstall
     COMMAND ${CMAKE_COMMAND} -P ${CMAKE_CURRENT_BINARY_DIR}/cmake_uninstall.cmake)
 endif()
+
+# Testing
+enable_testing()
+
+add_executable(test_btbb
+    test_btbb.c
+    btbb/btbb.c
+)
+target_include_directories(test_btbb PRIVATE ${PROJECT_SOURCE_DIR})
+set_target_properties(test_btbb PROPERTIES C_STANDARD 99)
+add_test(NAME test_btbb COMMAND test_btbb)
