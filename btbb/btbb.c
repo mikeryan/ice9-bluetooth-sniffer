@@ -78,9 +78,13 @@ typedef struct {
 
 static syndrome_struct *syndrome_map = NULL;
 
+static syndrome_struct *find_syndrome(uint64_t syndrome);
+
 static void add_syndrome(uint64_t syndrome, uint64_t error)
 {
     syndrome_struct *s;
+    if (find_syndrome(syndrome) != NULL)
+        return;
     s = malloc(sizeof(syndrome_struct));
     s->syndrome = syndrome;
     s->error = error;
