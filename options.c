@@ -86,13 +86,11 @@ static void _print_interfaces(void) {
     hackrf_list();
     bladerf_list();
     usrp_list();
-    exit(0);
 }
 
 static void _print_dlts(void) {
     printf("dlt {number=255}{name=LINKTYPE_BLUETOOTH_BREDR_BB}{display=Bluetooth BR/EDR and LE}\n");
     printf("dlt {number=256}{name=DLT_BLUETOOTH_LE_LL_WITH_PHDR}{display=Bluetooth LE}\n");
-    exit(0);
 }
 
 static void _print_config(void) {
@@ -102,39 +100,48 @@ static void _print_config(void) {
         printf("value {arg=0}{value=%d}{display=%d}{default=falses}\n", i, i);
     printf("value {arg=0}{value=96}{display=96}{default=true}\n");
     printf("arg {number=1}{call=--center-freq}{display=Center Frequency}{tooltip=Center frequency to capture on}{type=integer}{range=2400,2480}{default=2441}\n");
-    exit(0);
 }
 
-void parse_options(int argc, char **argv) {
-    static int do_interfaces = 0, do_dlts = 0, do_config = 0, do_capture = 0, do_install = 0;
+int parse_options(int argc, char **argv) {
+    int do_interfaces = 0, do_dlts = 0, do_config = 0, do_capture = 0, do_install = 0;
     int ch;
+
+    optind = 1; // Reset getopt state for re-entrancy
 
     static const struct option longopts[] = {
         /* extcap */
-        { "extcap-interfaces",      no_argument,            &do_interfaces,           1 },
-        { "extcap-dlts", no_argument, &do_dlts, 1 },
-        { "extcap-config", no_argument, &do_config, 1 },
-        { "capture", no_argument, NULL, 'l' },
-        { "extcap-version", required_argument, NULL, 0 }, // ignore
-        { "extcap-interface", required_argument, NULL, 'i' },
-        { "fifo", required_argument, NULL, 'w' },
+        { "extcap-interfaces",      no_argument,            NULL,           1 },
+        { "extcap-dlts",            no_argument,            NULL,           2 },
+        { "extcap-config",          no_argument,            NULL,           3 },
+        { "capture",                no_argument,            NULL,          'l' },
+        { "extcap-version",         required_argument,      NULL,           0 }, // ignore
+        { "extcap-interface",       required_argument,      NULL,          'i' },
+        { "fifo",                   required_argument,      NULL,          'w' },
 
         /* generic */
-        { "all-channels", no_argument, NULL, 'a' },
-        { "channels", required_argument, NULL, 'C' },
-        { "center-freq", required_argument, NULL, 'c' },
-        { "file", required_argument, NULL, 'f' },
-        { "help", no_argument, NULL, 'h' },
-        { "verbose", no_argument, NULL, 'v' },
-        { "stats", no_argument, NULL, 's' },
-        { "install", no_argument, NULL, 'I' },
-        { NULL,         0,                      NULL,           0 }
+        { "all-channels",           no_argument,            NULL,          'a' },
+        { "channels",               required_argument,      NULL,          'C' },
+        { "center-freq",            required_argument,      NULL,          'c' },
+        { "file",                   required_argument,      NULL,          'f' },
+        { "help",                   no_argument,            NULL,          'h' },
+        { "verbose",                no_argument,            NULL,          'v' },
+        { "stats",                  no_argument,            NULL,          's' },
+        { "install",                no_argument,            NULL,          'I' },
+        { NULL,                     0,                      NULL,           0 }
     };
 
     while ((ch = getopt_long(argc, argv, "li:w:C:c:f:aIvsh", longopts, NULL)) != -1) {
         switch (ch) {
             case 0:
-                // long opt
+                break;
+            case 1:
+                do_interfaces = 1;
+                break;
+            case 2:
+                do_dlts = 1;
+                break;
+            case 3:
+                do_config = 1;
                 break;
 
             case 'l':
@@ -148,19 +155,25 @@ void parse_options(int argc, char **argv) {
                     bladerf_num = atoi(optarg + strlen("bladerf"));
                 else if (strstr(optarg, "usrp-") == optarg)
                     usrp_serial = strdup(usrp_get_serial(optarg));
-                else
-                    errx(1, "invalid interface, must start with \"hackrf-\" or \"bladerf\"");
+                else {
+                    fprintf(stderr, "invalid interface, must start with \"hackrf-\" or \"bladerf\"\n");
+                    return -1;
+                }
                 break;
 
             case 'w':
-                if ((pcap = pcap_open(optarg)) == NULL)
-                    errx(1, "Unable to create PCAP %s", optarg);
+                if ((pcap = pcap_open(optarg)) == NULL) {
+                    fprintf(stderr, "Unable to create PCAP %s\n", optarg);
+                    return -1;
+                }
                 break;
 
             case 'f':
                 in = fopen(optarg, "r");
-                if (in == NULL)
-                    err(1, "Can't open input file");
+                if (in == NULL) {
+                    fprintf(stderr, "Can't open input file\n");
+                    return -1;
+                }
                 break;
 
             case 'C':
@@ -192,35 +205,58 @@ void parse_options(int argc, char **argv) {
             case 'h':
             default:
                 usage(0);
-                break;
+                return 1;
         }
     }
 
-    if (do_install)
-        install(); // will exit
+    if (do_install) {
+        install();
+        return 1;
+    }
 
     int sum = do_interfaces + do_dlts + do_config + do_capture;
     if (in == NULL) {
-        if (sum == 0) usage(0);
-        if (sum != 1) errx(1, "only one mode of operation supported at a time");
+        if (sum == 0) {
+            usage(0);
+            return 1;
+        }
+        if (sum != 1) {
+            fprintf(stderr, "only one mode of operation supported at a time\n");
+            return -1;
+        }
     } else if (sum != 0) {
-        errx(1, "don't mix extcap args with regular args");
+        fprintf(stderr, "don't mix extcap args with regular args\n");
+        return -1;
     }
 
-    if (do_interfaces)
+    if (do_interfaces) {
         _print_interfaces();
-    if (do_dlts)
+        return 1;
+    }
+    if (do_dlts) {
         _print_dlts();
-    if (do_config)
+        return 1;
+    }
+    if (do_config) {
         _print_config();
+        return 1;
+    }
 
-    if (center_freq == 0)
-        errx(1, "center freq is required");
-    if (center_freq < 2400 || center_freq > 2480)
-        errx(1, "invalid center freq");
-    if (channels < 4 || channels > 96 || (channels % 4) != 0)
-        errx(1, "invalid channels, must be between 4 and 96 and divisible by 4");
-    samp_rate = channels * 1e6;
+    if (center_freq == 0) {
+        fprintf(stderr, "center freq is required\n");
+        return -1;
+    }
+    if (center_freq < 2400 || center_freq > 2480) {
+        fprintf(stderr, "invalid center freq\n");
+        return -1;
+    }
+    if (channels < 4 || channels > 96 || (channels % 4) != 0) {
+        fprintf(stderr, "invalid channels, must be between 4 and 96 and divisible by 4\n");
+        return -1;
+    }
+    samp_rate = channels * 1e6f;
     if (do_capture)
         live = 1;
+
+    return 0;
 }

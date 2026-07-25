@@ -516,7 +516,7 @@ void sig(int signo) {
     running = 0;
 }
 
-void parse_options(int argc, char **argv);
+int parse_options(int argc, char **argv);
 
 int main(int argc, char **argv) {
     unsigned i;
@@ -534,7 +534,10 @@ int main(int argc, char **argv) {
     // enables , separator in printf
     setlocale(LC_NUMERIC, "");
 
-    parse_options(argc, argv);
+    int opt_res = parse_options(argc, argv);
+    if (opt_res != 0) {
+        return opt_res < 0 ? 1 : 0;
+    }
 
     if (live) {
         // TODO select first available interface
