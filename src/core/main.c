@@ -511,11 +511,7 @@ void sig(int signo) {
 
 int main(int argc, char **argv) {
     unsigned i;
-    // char *out_filename = NULL;
-    hackrf_device *hackrf = NULL;
-    struct bladerf *bladerf = NULL;
-    uhd_usrp_handle usrp = NULL;
-    pthread_t bladerf_thread, usrp_thread;
+    sdr_dev_t *sdr = NULL;
 
     signal(SIGINT, sig);
     signal(SIGTERM, sig);
@@ -532,13 +528,9 @@ int main(int argc, char **argv) {
     }
 
     if (config.live) {
-        // TODO select first available interface
-        if (config.bladerf_num >= 0)
-            bladerf = bladerf_setup(config.bladerf_num);
-        else if (config.usrp_serial != NULL)
-            usrp = usrp_setup(config.usrp_serial);
-        else
-            hackrf = hackrf_setup();
+        sdr = sdr_open_device(&config);
+        if (sdr == NULL)
+            errx(1, "Failed to initialize SDR device");
     }
     gen_syndrome_map(1);
 
@@ -567,44 +559,26 @@ int main(int argc, char **argv) {
 
     init_threads(!config.live);
 
-    if (config.live) {
-        if (hackrf != NULL)
-            hackrf_start_rx(hackrf, hackrf_rx_cb, NULL);
-        else if (usrp != NULL)
-            pthread_create(&usrp_thread, NULL, usrp_stream_thread, (void *)usrp);
-        else
-            pthread_create(&bladerf_thread, NULL, bladerf_stream_thread, (void *)bladerf);
+    if (config.live && sdr != NULL) {
+        sdr_start(sdr);
     }
 
     while (running) {
-        if (config.live && hackrf != NULL && !hackrf_is_streaming(hackrf))
+        if (config.live && sdr != NULL && !sdr_is_streaming(sdr))
             break;
         pause();
     }
     running = 0;
 
-    if (config.live) {
-        if (hackrf != NULL)
-            hackrf_stop_rx(hackrf);
-        else if (usrp != NULL)
-            ; // do nothing (stream is stopped in thread)
-        else
-            bladerf_enable_module(bladerf, BLADERF_MODULE_RX, false);
+    if (config.live && sdr != NULL) {
+        sdr_stop(sdr);
     }
 
     deinit_threads(!config.live);
 
-    if (config.live) {
-        if (hackrf != NULL) {
-            hackrf_close(hackrf);
-            hackrf_exit();
-        } else if (usrp != NULL) {
-            pthread_join(usrp_thread, NULL);
-            usrp_close(usrp);
-        } else {
-            pthread_join(bladerf_thread, NULL);
-            bladerf_close(bladerf);
-        }
+    if (config.live && sdr != NULL) {
+        sdr_close(sdr);
+        sdr = NULL;
     }
 
     config_free(&config);

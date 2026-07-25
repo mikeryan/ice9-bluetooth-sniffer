@@ -67,6 +67,7 @@ set(SOURCES
     ${PROJECT_SOURCE_DIR}/src/dsp/burst_catcher.c
     ${PROJECT_SOURCE_DIR}/src/dsp/fsk.c
     ${PROJECT_SOURCE_DIR}/src/sdr/hackrf.c
+    ${PROJECT_SOURCE_DIR}/src/sdr/sdr_common.c
     ${PROJECT_SOURCE_DIR}/src/core/help.c
     ${PROJECT_SOURCE_DIR}/src/core/options.c
     ${PROJECT_SOURCE_DIR}/src/core/pcap.c
@@ -264,3 +265,11 @@ target_compile_options(test_options PRIVATE ${TEST_SANITIZER_FLAGS})
 target_link_options(test_options PRIVATE ${TEST_SANITIZER_FLAGS})
 set_target_properties(test_options PROPERTIES C_STANDARD 99)
 add_test(NAME test_options COMMAND test_options)
+
+add_executable(test_sdr tests/test_sdr.c src/sdr/sdr_common.c src/core/options.c src/core/pcap.c)
+target_include_directories(test_sdr PRIVATE ${TEST_INCLUDES})
+target_compile_options(test_sdr PRIVATE ${TEST_SANITIZER_FLAGS})
+target_link_options(test_sdr PRIVATE ${TEST_SANITIZER_FLAGS})
+target_link_libraries(test_sdr PRIVATE Threads::Threads)
+set_target_properties(test_sdr PROPERTIES C_STANDARD 99)
+add_test(NAME test_sdr COMMAND test_sdr)

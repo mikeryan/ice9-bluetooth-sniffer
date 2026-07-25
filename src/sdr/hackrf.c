@@ -70,3 +70,49 @@ int hackrf_rx_cb(hackrf_transfer *t) {
         free(s);
     return 0;
 }
+
+static int hackrf_ops_open(sdr_dev_t *dev, const sniffer_config_t *cfg) {
+    (void)cfg;
+    hackrf_device *hdev = hackrf_setup();
+    if (!hdev) return -1;
+    dev->priv = hdev;
+    return 0;
+}
+
+static int hackrf_ops_start(sdr_dev_t *dev) {
+    hackrf_device *hdev = (hackrf_device *)dev->priv;
+    if (!hdev) return -1;
+    int r = hackrf_start_rx(hdev, hackrf_rx_cb, dev);
+    if (r == HACKRF_SUCCESS) dev->is_streaming = true;
+    return r == HACKRF_SUCCESS ? 0 : -1;
+}
+
+static int hackrf_ops_is_streaming(sdr_dev_t *dev) {
+    hackrf_device *hdev = (hackrf_device *)dev->priv;
+    return (hdev && hackrf_is_streaming(hdev) == HACKRF_TRUE) ? 1 : 0;
+}
+
+static int hackrf_ops_stop(sdr_dev_t *dev) {
+    hackrf_device *hdev = (hackrf_device *)dev->priv;
+    if (hdev) hackrf_stop_rx(hdev);
+    dev->is_streaming = false;
+    return 0;
+}
+
+static void hackrf_ops_close(sdr_dev_t *dev) {
+    hackrf_device *hdev = (hackrf_device *)dev->priv;
+    if (hdev) {
+        hackrf_close(hdev);
+        hackrf_exit();
+        dev->priv = NULL;
+    }
+}
+
+const sdr_ops_t hackrf_sdr_ops = {
+    .name = "hackrf",
+    .open = hackrf_ops_open,
+    .start = hackrf_ops_start,
+    .is_streaming = hackrf_ops_is_streaming,
+    .stop = hackrf_ops_stop,
+    .close = hackrf_ops_close,
+};

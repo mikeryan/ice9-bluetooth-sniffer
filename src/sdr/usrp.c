@@ -6,6 +6,7 @@
 #include <signal.h>
 #include <stdio.h>
 #include <string.h>
+#include <pthread.h>
 
 #include <uhd.h>
 
@@ -203,3 +204,49 @@ void *usrp_stream_thread(void *arg) {
 void usrp_close(uhd_usrp_handle usrp) {
     uhd_usrp_free(&usrp);
 }
+
+typedef struct {
+    uhd_usrp_handle usrp;
+    pthread_t stream_thread;
+} usrp_priv_t;
+
+static int usrp_ops_open(sdr_dev_t *dev, const sniffer_config_t *cfg) {
+    uhd_usrp_handle usrp = usrp_setup(cfg->usrp_serial);
+    if (!usrp) return -1;
+    usrp_priv_t *priv = calloc(1, sizeof(usrp_priv_t));
+    priv->usrp = usrp;
+    dev->priv = priv;
+    return 0;
+}
+
+static int usrp_ops_start(sdr_dev_t *dev) {
+    usrp_priv_t *priv = (usrp_priv_t *)dev->priv;
+    if (!priv || !priv->usrp) return -1;
+    dev->is_streaming = true;
+    return pthread_create(&priv->stream_thread, NULL, usrp_stream_thread, (void *)priv->usrp);
+}
+
+static int usrp_ops_stop(sdr_dev_t *dev) {
+    dev->is_streaming = false;
+    return 0;
+}
+
+static void usrp_ops_close(sdr_dev_t *dev) {
+    usrp_priv_t *priv = (usrp_priv_t *)dev->priv;
+    if (priv) {
+        if (priv->usrp) {
+            pthread_join(priv->stream_thread, NULL);
+            usrp_close(priv->usrp);
+        }
+        free(priv);
+        dev->priv = NULL;
+    }
+}
+
+const sdr_ops_t usrp_sdr_ops = {
+    .name = "usrp",
+    .open = usrp_ops_open,
+    .start = usrp_ops_start,
+    .stop = usrp_ops_stop,
+    .close = usrp_ops_close,
+};

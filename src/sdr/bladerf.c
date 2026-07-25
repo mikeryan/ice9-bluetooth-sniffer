@@ -7,6 +7,7 @@
 #include <signal.h>
 #include <stdio.h>
 #include <string.h>
+#include <pthread.h>
 
 #include <libbladeRF.h>
 
@@ -160,3 +161,54 @@ void *bladerf_stream_thread(void *arg) {
 
     return NULL;
 }
+
+typedef struct {
+    struct bladerf *dev;
+    pthread_t stream_thread;
+} bladerf_priv_t;
+
+static int bladerf_ops_open(sdr_dev_t *dev, const sniffer_config_t *cfg) {
+    int id = cfg->bladerf_num >= 0 ? cfg->bladerf_num : 0;
+    struct bladerf *bdev = bladerf_setup(id);
+    if (!bdev) return -1;
+    bladerf_priv_t *priv = calloc(1, sizeof(bladerf_priv_t));
+    priv->dev = bdev;
+    dev->priv = priv;
+    return 0;
+}
+
+static int bladerf_ops_start(sdr_dev_t *dev) {
+    bladerf_priv_t *priv = (bladerf_priv_t *)dev->priv;
+    if (!priv || !priv->dev) return -1;
+    dev->is_streaming = true;
+    return pthread_create(&priv->stream_thread, NULL, bladerf_stream_thread, (void *)priv->dev);
+}
+
+static int bladerf_ops_stop(sdr_dev_t *dev) {
+    bladerf_priv_t *priv = (bladerf_priv_t *)dev->priv;
+    if (priv && priv->dev) {
+        bladerf_enable_module(priv->dev, BLADERF_MODULE_RX, false);
+    }
+    dev->is_streaming = false;
+    return 0;
+}
+
+static void bladerf_ops_close(sdr_dev_t *dev) {
+    bladerf_priv_t *priv = (bladerf_priv_t *)dev->priv;
+    if (priv) {
+        if (priv->dev) {
+            pthread_join(priv->stream_thread, NULL);
+            bladerf_close(priv->dev);
+        }
+        free(priv);
+        dev->priv = NULL;
+    }
+}
+
+const sdr_ops_t bladerf_sdr_ops = {
+    .name = "bladerf",
+    .open = bladerf_ops_open,
+    .start = bladerf_ops_start,
+    .stop = bladerf_ops_stop,
+    .close = bladerf_ops_close,
+};
