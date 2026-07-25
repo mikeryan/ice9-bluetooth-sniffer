@@ -60,13 +60,6 @@ if(NOT CMAKE_BUILD_TYPE)
       "Choose the type of build, options are: Debug Release RelWithDebInfo MinSizeRel." FORCE)
 endif(NOT CMAKE_BUILD_TYPE)
 
-include_directories(${PROJECT_SOURCE_DIR})
-include_directories(${CMAKE_CURRENT_BINARY_DIR})
-include_directories(${LIBHACKRF_INCLUDE_DIR})
-include_directories(${LIBBLADERF_INCLUDE_DIR})
-include_directories(${UHD_INCLUDE_DIR})
-include_directories(${LIQUID_INCLUDE_DIR})
-
 set(SOURCES
     ${PROJECT_SOURCE_DIR}/bladerf.c
     ${PROJECT_SOURCE_DIR}/bluetooth.c
@@ -96,8 +89,17 @@ add_executable(ice9-bluetooth
     ${CMAKE_CURRENT_BINARY_DIR}/help.h
 )
 
+target_include_directories(ice9-bluetooth PRIVATE
+    ${PROJECT_SOURCE_DIR}
+    ${CMAKE_CURRENT_BINARY_DIR}
+    ${LIBHACKRF_INCLUDE_DIR}
+    ${LIBBLADERF_INCLUDE_DIR}
+    ${UHD_INCLUDE_DIR}
+    ${LIQUID_INCLUDE_DIR}
+)
+
 if(USE_VKFFT)
-  include_directories("vkfft")
+  target_include_directories(ice9-bluetooth PRIVATE "vkfft")
   set(VKFFT_BACKEND 5 CACHE STRING "5 - Metal")
   add_definitions(-DVKFFT_BACKEND=${VKFFT_BACKEND})
 
@@ -108,14 +110,13 @@ if(USE_VKFFT)
     find_library(METAL_LIB Metal REQUIRED)
     target_link_libraries(ice9-bluetooth PRIVATE
       ${FOUNDATION_LIB} ${QUARTZ_CORE_LIB} ${METAL_LIB})
-    target_include_directories(${PROJECT_NAME} PUBLIC "metal-cpp/")
+    target_include_directories(ice9-bluetooth PRIVATE "metal-cpp/")
   endif()
 else()
-  include_directories("fftw")
   add_definitions(-DUSE_FFTW)
   find_package(FFTW REQUIRED)
   target_link_libraries(ice9-bluetooth PRIVATE FFTW::Float)
-  include_directories(${FFTW_INCLUDE_DIR})
+  target_include_directories(ice9-bluetooth PRIVATE "fftw" ${FFTW_INCLUDE_DIR})
 endif()
 
 target_compile_options(ice9-bluetooth PRIVATE
