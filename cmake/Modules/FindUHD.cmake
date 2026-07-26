@@ -11,7 +11,7 @@ find_package(PkgConfig)
 pkg_check_modules(PC_UHD QUIET uhd)
 
 find_path(UHD_INCLUDE_DIR
-    NAMES uhd/config.hpp
+    NAMES uhd.h
     HINTS
         ${UHD_DIR}/include
         ${PC_UHD_INCLUDEDIR}
