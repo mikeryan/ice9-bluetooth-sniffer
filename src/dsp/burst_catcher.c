@@ -38,8 +38,12 @@ void burst_catcher_create(burst_catcher_t *c, unsigned freq) {
 }
 
 void burst_catcher_destroy(burst_catcher_t *c) {
-    free(c->agc);
+    if (c->agc != NULL) {
+        agc_crcf_destroy(c->agc);
+        c->agc = NULL;
+    }
     free(c->burst);
+    c->burst = NULL;
 }
 
 int burst_catcher_execute(burst_catcher_t *c, float complex *sample, burst_t *burst_out) {
