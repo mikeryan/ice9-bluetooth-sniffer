@@ -41,8 +41,14 @@ bool sdr_is_streaming(sdr_dev_t *dev);
 int sdr_stop(sdr_dev_t *dev);
 void sdr_close(sdr_dev_t *dev);
 
+#ifdef HAVE_HACKRF
 extern const sdr_ops_t hackrf_sdr_ops;
+#endif
+#ifdef HAVE_BLADERF
 extern const sdr_ops_t bladerf_sdr_ops;
+#endif
+#ifdef HAVE_UHD
 extern const sdr_ops_t usrp_sdr_ops;
+#endif
 
 #endif

@@ -5,10 +5,12 @@
 #ifndef __BLADERF_H__
 #define __BLADERF_H__
 
+#ifdef HAVE_BLADERF
 #include <libbladeRF.h>
 
 void bladerf_list(void);
 struct bladerf *bladerf_setup(int id);
 void *bladerf_stream_thread(void *arg);
+#endif
 
 #endif

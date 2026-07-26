@@ -12,10 +12,16 @@
 
 // stub functions
 void usage(int exitcode) { (void)exitcode; }
+#ifdef HAVE_HACKRF
 void hackrf_list(void) {}
+#endif
+#ifdef HAVE_BLADERF
 void bladerf_list(void) {}
+#endif
+#ifdef HAVE_UHD
 void usrp_list(void) {}
 char *usrp_get_serial(const char *interface_name) { (void)interface_name; return "31215"; }
+#endif
 
 static void test_all_channels_flag(void) {
     sniffer_config_t cfg;
@@ -47,21 +53,33 @@ static void test_sdr_interface_selection(void) {
     sniffer_config_t cfg;
     char *argv1[] = { "ice9-bluetooth", "-a", "-i", "hackrf-12345", "--capture", NULL };
     int res = parse_options(5, argv1, &cfg);
+#ifdef HAVE_HACKRF
     assert(res == 0);
     assert(cfg.serial != NULL && strcmp(cfg.serial, "12345") == 0);
     config_free(&cfg);
+#else
+    assert(res == -1);
+#endif
 
     char *argv2[] = { "ice9-bluetooth", "-a", "-i", "bladerf0", "--capture", NULL };
     res = parse_options(5, argv2, &cfg);
+#ifdef HAVE_BLADERF
     assert(res == 0);
     assert(cfg.bladerf_num == 0);
     config_free(&cfg);
+#else
+    assert(res == -1);
+#endif
 
     char *argv3[] = { "ice9-bluetooth", "-a", "-i", "usrp-31215", "--capture", NULL };
     res = parse_options(5, argv3, &cfg);
+#ifdef HAVE_UHD
     assert(res == 0);
     assert(cfg.usrp_serial != NULL && strcmp(cfg.usrp_serial, "31215") == 0);
     config_free(&cfg);
+#else
+    assert(res == -1);
+#endif
 
     printf("[PASS] test_sdr_interface_selection\n");
 }

@@ -15,11 +15,41 @@ sdr_dev_t *sdr_open_device(const sniffer_config_t *cfg) {
     if (dev == NULL) return NULL;
 
     if (cfg->bladerf_num >= 0) {
+#ifdef HAVE_BLADERF
         dev->ops = &bladerf_sdr_ops;
+#else
+        fprintf(stderr, "BladeRF support not compiled in\n");
+        free(dev);
+        return NULL;
+#endif
     } else if (cfg->usrp_serial != NULL) {
+#ifdef HAVE_UHD
         dev->ops = &usrp_sdr_ops;
-    } else {
+#else
+        fprintf(stderr, "USRP support not compiled in\n");
+        free(dev);
+        return NULL;
+#endif
+    } else if (cfg->serial != NULL) {
+#ifdef HAVE_HACKRF
         dev->ops = &hackrf_sdr_ops;
+#else
+        fprintf(stderr, "HackRF support not compiled in\n");
+        free(dev);
+        return NULL;
+#endif
+    } else {
+#ifdef HAVE_HACKRF
+        dev->ops = &hackrf_sdr_ops;
+#elif defined(HAVE_BLADERF)
+        dev->ops = &bladerf_sdr_ops;
+#elif defined(HAVE_UHD)
+        dev->ops = &usrp_sdr_ops;
+#else
+        fprintf(stderr, "No SDR support compiled in\n");
+        free(dev);
+        return NULL;
+#endif
     }
 
     if (dev->ops->open && dev->ops->open(dev, cfg) != 0) {

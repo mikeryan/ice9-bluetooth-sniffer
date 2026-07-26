@@ -2,6 +2,8 @@
  * Copyright 2022 ICE9 Consulting LLC
  */
 
+#ifdef HAVE_HACKRF
+
 #include <err.h>
 #include <signal.h>
 #include <stdlib.h>
@@ -116,3 +118,5 @@ const sdr_ops_t hackrf_sdr_ops = {
     .stop = hackrf_ops_stop,
     .close = hackrf_ops_close,
 };
+
+#endif

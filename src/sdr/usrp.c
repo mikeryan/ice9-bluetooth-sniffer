@@ -2,6 +2,8 @@
  * Copyright 2022 ICE9 Consulting LLC
  */
 
+#ifdef HAVE_UHD
+
 #include <err.h>
 #include <signal.h>
 #include <stdio.h>
@@ -250,3 +252,5 @@ const sdr_ops_t usrp_sdr_ops = {
     .stop = usrp_ops_stop,
     .close = usrp_ops_close,
 };
+
+#endif

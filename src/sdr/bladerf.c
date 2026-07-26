@@ -2,6 +2,8 @@
  * Copyright (c) 2022 ICE9 Consulting LLC
  */
 
+#ifdef HAVE_BLADERF
+
 #include <complex.h>
 #include <err.h>
 #include <signal.h>
@@ -212,3 +214,5 @@ const sdr_ops_t bladerf_sdr_ops = {
     .stop = bladerf_ops_stop,
     .close = bladerf_ops_close,
 };
+
+#endif

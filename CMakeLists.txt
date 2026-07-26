@@ -25,10 +25,37 @@ set(THREADS_PREFER_PTHREAD_FLAG ON)
 find_package(Threads REQUIRED)
 
 # Add required dependencies
-find_package(HackRF REQUIRED)
-find_package(BladeRF REQUIRED)
-find_package(UHD REQUIRED)
+find_package(HackRF QUIET)
+find_package(BladeRF QUIET)
+find_package(UHD QUIET)
 find_package(Liquid REQUIRED)
+
+if (HACKRF_FOUND OR LIBHACKRF_FOUND OR HackRF_FOUND)
+    set(HAVE_HACKRF TRUE)
+    add_definitions(-DHAVE_HACKRF)
+    message(STATUS "SDR support: HackRF ENABLED")
+else()
+    set(HAVE_HACKRF FALSE)
+    message(STATUS "SDR support: HackRF DISABLED")
+endif()
+
+if (BLADERF_FOUND OR LIBBLADERF_FOUND OR BladeRF_FOUND)
+    set(HAVE_BLADERF TRUE)
+    add_definitions(-DHAVE_BLADERF)
+    message(STATUS "SDR support: BladeRF ENABLED")
+else()
+    set(HAVE_BLADERF FALSE)
+    message(STATUS "SDR support: BladeRF DISABLED")
+endif()
+
+if (UHD_FOUND OR Uhd_FOUND)
+    set(HAVE_UHD TRUE)
+    add_definitions(-DHAVE_UHD)
+    message(STATUS "SDR support: USRP/UHD ENABLED")
+else()
+    set(HAVE_UHD FALSE)
+    message(STATUS "SDR support: USRP/UHD DISABLED")
+endif()
 
 # find Wireshark install dir
 execute_process(COMMAND ${CMAKE_C_COMPILER} -dumpmachine
@@ -61,22 +88,31 @@ if(NOT CMAKE_BUILD_TYPE)
 endif(NOT CMAKE_BUILD_TYPE)
 
 set(SOURCES
-    ${PROJECT_SOURCE_DIR}/src/sdr/bladerf.c
     ${PROJECT_SOURCE_DIR}/src/protocol/bluetooth.c
     ${PROJECT_SOURCE_DIR}/src/protocol/btbb/btbb.c
     ${PROJECT_SOURCE_DIR}/src/dsp/burst_catcher.c
     ${PROJECT_SOURCE_DIR}/src/dsp/fsk.c
-    ${PROJECT_SOURCE_DIR}/src/sdr/hackrf.c
     ${PROJECT_SOURCE_DIR}/src/sdr/sdr_common.c
     ${PROJECT_SOURCE_DIR}/src/core/help.c
     ${PROJECT_SOURCE_DIR}/src/core/options.c
     ${PROJECT_SOURCE_DIR}/src/core/pcap.c
-    ${PROJECT_SOURCE_DIR}/src/sdr/usrp.c
     ${PROJECT_SOURCE_DIR}/src/dsp/pfbch2.c
     ${PROJECT_SOURCE_DIR}/src/dsp/window.c
 
     ${PROJECT_SOURCE_DIR}/src/core/main.c
 )
+
+if(HAVE_HACKRF)
+    list(APPEND SOURCES ${PROJECT_SOURCE_DIR}/src/sdr/hackrf.c)
+endif()
+
+if(HAVE_BLADERF)
+    list(APPEND SOURCES ${PROJECT_SOURCE_DIR}/src/sdr/bladerf.c)
+endif()
+
+if(HAVE_UHD)
+    list(APPEND SOURCES ${PROJECT_SOURCE_DIR}/src/sdr/usrp.c)
+endif()
 
 if(USE_VKFFT)
     list(APPEND SOURCES ${PROJECT_SOURCE_DIR}/vkfft/fft.cc)
@@ -89,6 +125,17 @@ add_executable(ice9-bluetooth
     ${CMAKE_CURRENT_BINARY_DIR}/help.h
 )
 
+set(SDR_INCLUDE_DIRS)
+if(HAVE_HACKRF)
+    list(APPEND SDR_INCLUDE_DIRS ${LIBHACKRF_INCLUDE_DIR})
+endif()
+if(HAVE_BLADERF)
+    list(APPEND SDR_INCLUDE_DIRS ${LIBBLADERF_INCLUDE_DIR})
+endif()
+if(HAVE_UHD)
+    list(APPEND SDR_INCLUDE_DIRS ${UHD_INCLUDE_DIR})
+endif()
+
 target_include_directories(ice9-bluetooth PRIVATE
     ${PROJECT_SOURCE_DIR}/src/core
     ${PROJECT_SOURCE_DIR}/src/dsp
@@ -96,9 +143,7 @@ target_include_directories(ice9-bluetooth PRIVATE
     ${PROJECT_SOURCE_DIR}/src/protocol
     ${PROJECT_SOURCE_DIR}/src/protocol/btbb
     ${CMAKE_CURRENT_BINARY_DIR}
-    ${LIBHACKRF_INCLUDE_DIR}
-    ${LIBBLADERF_INCLUDE_DIR}
-    ${UHD_INCLUDE_DIR}
+    ${SDR_INCLUDE_DIRS}
     ${LIQUID_INCLUDE_DIR}
 )
 
@@ -154,12 +199,21 @@ if (UNIX AND NOT APPLE)
   endif()
 endif()
 
+set(SDR_LIBRARIES)
+if(HAVE_HACKRF)
+    list(APPEND SDR_LIBRARIES ${LIBHACKRF_LIBRARIES})
+endif()
+if(HAVE_BLADERF)
+    list(APPEND SDR_LIBRARIES ${LIBBLADERF_LIBRARIES})
+endif()
+if(HAVE_UHD)
+    list(APPEND SDR_LIBRARIES ${UHD_LIBRARIES})
+endif()
+
 target_link_libraries(ice9-bluetooth
     PRIVATE Threads::Threads
     m
-    ${LIBHACKRF_LIBRARIES}
-    ${LIBBLADERF_LIBRARIES}
-    ${UHD_LIBRARIES}
+    ${SDR_LIBRARIES}
     ${LIQUID_LIBRARIES}
 )
 
@@ -275,14 +329,14 @@ set_target_properties(test_pcap PROPERTIES C_STANDARD 99)
 add_test(NAME test_pcap COMMAND test_pcap)
 
 add_executable(test_options tests/test_options.c src/core/options.c src/core/pcap.c)
-target_include_directories(test_options PRIVATE ${TEST_INCLUDES} ${HACKRF_INCLUDE_DIRS})
+target_include_directories(test_options PRIVATE ${TEST_INCLUDES} ${SDR_INCLUDE_DIRS})
 target_compile_options(test_options PRIVATE ${TEST_SANITIZER_FLAGS})
 target_link_options(test_options PRIVATE ${TEST_SANITIZER_FLAGS})
 set_target_properties(test_options PROPERTIES C_STANDARD 99)
 add_test(NAME test_options COMMAND test_options)
 
 add_executable(test_sdr tests/test_sdr.c src/sdr/sdr_common.c src/core/options.c src/core/pcap.c)
-target_include_directories(test_sdr PRIVATE ${TEST_INCLUDES})
+target_include_directories(test_sdr PRIVATE ${TEST_INCLUDES} ${SDR_INCLUDE_DIRS})
 target_compile_options(test_sdr PRIVATE ${TEST_SANITIZER_FLAGS})
 target_link_options(test_sdr PRIVATE ${TEST_SANITIZER_FLAGS})
 target_link_libraries(test_sdr PRIVATE Threads::Threads)

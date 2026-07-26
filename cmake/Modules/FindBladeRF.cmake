@@ -8,7 +8,7 @@
 #  LIBBLADERF_LIBRARY, where to find LIBBLADERF.
 
 find_package(PkgConfig)
-pkg_check_modules(PC_LIBHACKRF QUIET libbladeRF)
+pkg_check_modules(PC_LIBBLADERF QUIET libbladeRF)
 
 find_path(LIBBLADERF_INCLUDE_DIR
     NAMES libbladeRF.h

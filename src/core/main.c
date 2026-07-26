@@ -19,16 +19,13 @@
 #pragma clang diagnostic ignored "-Wdeprecated-declarations"
 #include <liquid/liquid.h>
 
-#include "bladerf.h"
 #include "bluetooth.h"
 #include "btbb/btbb.h"
 #include "burst_catcher.h"
 #include "fft.h"
 #include "fsk.h"
-#include "hackrf.h"
 #include "pcap.h"
 #include "sdr.h"
-#include "usrp.h"
 
 #include "pfbch2.h"
 

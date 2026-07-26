@@ -18,8 +18,6 @@
 #include <sys/syslimits.h>
 #endif
 
-#include <libhackrf/hackrf.h>
-
 #include "options.h"
 #include "hackrf.h"
 #include "bladerf.h"
@@ -91,12 +89,20 @@ static void install(void) {
     exit(0);
 }
 
+#ifdef HAVE_UHD
 void usrp_list(void);
+#endif
 static void _print_interfaces(void) {
     printf("extcap {version=1.0}\n");
+#ifdef HAVE_HACKRF
     hackrf_list();
+#endif
+#ifdef HAVE_BLADERF
     bladerf_list();
+#endif
+#ifdef HAVE_UHD
     usrp_list();
+#endif
 }
 
 static void _print_dlts(void) {
@@ -161,14 +167,29 @@ int parse_options(int argc, char **argv, sniffer_config_t *cfg) {
                 break;
 
             case 'i':
-                if (strstr(optarg, "hackrf-") == optarg)
+                if (strstr(optarg, "hackrf-") == optarg) {
+#ifdef HAVE_HACKRF
                     cfg->serial = strdup(optarg + strlen("hackrf-"));
-                else if (strstr(optarg, "bladerf") == optarg)
+#else
+                    fprintf(stderr, "HackRF support not compiled in\n");
+                    return -1;
+#endif
+                } else if (strstr(optarg, "bladerf") == optarg) {
+#ifdef HAVE_BLADERF
                     cfg->bladerf_num = atoi(optarg + strlen("bladerf"));
-                else if (strstr(optarg, "usrp-") == optarg)
+#else
+                    fprintf(stderr, "BladeRF support not compiled in\n");
+                    return -1;
+#endif
+                } else if (strstr(optarg, "usrp-") == optarg) {
+#ifdef HAVE_UHD
                     cfg->usrp_serial = strdup(usrp_get_serial(optarg));
-                else {
-                    fprintf(stderr, "invalid interface, must start with \"hackrf-\" or \"bladerf\"\n");
+#else
+                    fprintf(stderr, "USRP support not compiled in\n");
+                    return -1;
+#endif
+                } else {
+                    fprintf(stderr, "invalid interface name\n");
                     return -1;
                 }
                 break;
