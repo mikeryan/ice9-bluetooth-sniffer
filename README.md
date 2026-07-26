@@ -118,6 +118,14 @@ If that fails, we then try to detect BLE packets.
 This code is naughty and occasionally needs to be killed with prejudice
 (`kill -9`). This happens most often in benchmark mode.
 
+## LLM Use
+
+Many commits authored after 2026-07-25 have been made with the use of
+large language models (LLMs). I respect that this may be a controversial
+disclosure, so I am making it clear up-front. For more context as to
+why, observe commit frequency to this repository before and after that
+date.
+
 ## Author
 
 This code was written by Mike Ryan of ICE9 Consulting LLC. For more
