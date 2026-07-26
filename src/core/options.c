@@ -47,6 +47,14 @@ void config_free(sniffer_config_t *cfg) {
         fclose(cfg->in);
         cfg->in = NULL;
     }
+    if (cfg->dump_path) {
+        free(cfg->dump_path);
+        cfg->dump_path = NULL;
+    }
+    if (cfg->dump_file) {
+        fclose(cfg->dump_file);
+        cfg->dump_file = NULL;
+    }
 }
 
 static void do_mkdir(char *path) {
@@ -145,10 +153,12 @@ int parse_options(int argc, char **argv, sniffer_config_t *cfg) {
         { "verbose",                no_argument,            NULL,          'v' },
         { "stats",                  no_argument,            NULL,          's' },
         { "install",                no_argument,            NULL,          'I' },
+        { "dump",                   required_argument,      NULL,          'd' },
+        { "dump-only",              no_argument,            NULL,           4 },
         { NULL,                     0,                      NULL,           0 }
     };
 
-    while ((ch = getopt_long(argc, argv, "li:w:C:c:f:aIvsh", longopts, NULL)) != -1) {
+    while ((ch = getopt_long(argc, argv, "li:w:C:c:f:aIvshd:", longopts, NULL)) != -1) {
         switch (ch) {
             case 0:
                 break;
@@ -234,6 +244,14 @@ int parse_options(int argc, char **argv, sniffer_config_t *cfg) {
                 do_install = 1;
                 break;
 
+            case 'd':
+                cfg->dump_path = strdup(optarg);
+                break;
+
+            case 4:
+                cfg->dump_only = 1;
+                break;
+
             case '?':
             case 'h':
             default:
@@ -273,6 +291,15 @@ int parse_options(int argc, char **argv, sniffer_config_t *cfg) {
     if (do_config) {
         _print_config();
         return 1;
+    }
+
+    if (cfg->dump_only && cfg->dump_path == NULL) {
+        fprintf(stderr, "--dump-only requires --dump <file>\n");
+        return -1;
+    }
+    if (cfg->dump_only && cfg->pcap != NULL) {
+        fprintf(stderr, "cannot write PCAP and raw dump at the same time\n");
+        return -1;
     }
 
     if (cfg->center_freq == 0) {

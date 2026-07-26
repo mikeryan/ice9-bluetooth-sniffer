@@ -188,6 +188,7 @@ void *usrp_stream_thread(void *arg) {
         if(error_code != UHD_RX_METADATA_ERROR_CODE_NONE && error_code != 8)
             errx(1, "Error during streaming: %u", error_code);
         s->num = num_rx_samples;
+        s->sample_size = 2 * sizeof(float);
         if (running)
             push_samples(s);
         else

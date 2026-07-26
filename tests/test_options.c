@@ -111,6 +111,33 @@ static void test_extcap_interfaces_flag(void) {
     printf("[PASS] test_extcap_interfaces_flag\n");
 }
 
+static void test_dump_options_valid(void) {
+    sniffer_config_t cfg;
+    char *argv[] = { "ice9-bluetooth", "-a", "-d", "test.raw", "--dump-only", "--capture", NULL };
+    int res = parse_options(6, argv, &cfg);
+    assert(res == 0);
+    assert(cfg.dump_path != NULL && strcmp(cfg.dump_path, "test.raw") == 0);
+    assert(cfg.dump_only == 1);
+    config_free(&cfg);
+    printf("[PASS] test_dump_options_valid\n");
+}
+
+static void test_dump_options_invalid(void) {
+    sniffer_config_t cfg;
+    // dump-only without dump path
+    char *argv1[] = { "ice9-bluetooth", "-a", "--dump-only", "--capture", NULL };
+    int res = parse_options(4, argv1, &cfg);
+    assert(res == -1);
+    config_free(&cfg);
+
+    // dump-only with PCAP
+    char *argv2[] = { "ice9-bluetooth", "-a", "-d", "test.raw", "--dump-only", "-w", "test.pcap", "--capture", NULL };
+    res = parse_options(8, argv2, &cfg);
+    assert(res == -1);
+    config_free(&cfg);
+    printf("[PASS] test_dump_options_invalid\n");
+}
+
 int main(void) {
     printf("===========================================\n");
     printf(" Running options.c Unit Tests              \n");
@@ -120,6 +147,8 @@ int main(void) {
     test_sdr_interface_selection();
     test_invalid_center_freq();
     test_invalid_channels_not_divisible_by_4();
+    test_dump_options_valid();
+    test_dump_options_invalid();
     test_extcap_interfaces_flag();
     printf("===========================================\n");
     printf(" All options tests passed successfully!    \n");

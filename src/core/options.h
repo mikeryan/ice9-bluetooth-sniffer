@@ -23,6 +23,10 @@ typedef struct {
     int live;
     int verbose;
     int stats;
+
+    char *dump_path;
+    FILE *dump_file;
+    int dump_only;
 } sniffer_config_t;
 
 extern sniffer_config_t config;

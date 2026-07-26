@@ -102,6 +102,7 @@ void *bladerf_rx_cb(struct bladerf *bladerf, struct bladerf_stream *stream, stru
 
     sample_buf_t *s = malloc(sizeof(*s) + num_samples * sizeof(int8_t) * 2);
     s->num = num_samples;
+    s->sample_size = 2;
     for (i = 0; i < num_samples * 2; ++i)
 #ifdef BLADERF_OVERSAMPLE
         s->samples[i] = d[i];

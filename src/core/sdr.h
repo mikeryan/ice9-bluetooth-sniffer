@@ -13,6 +13,7 @@
 
 typedef struct _sample_buf_t {
     unsigned num;
+    unsigned sample_size;
     int8_t samples[];
 } sample_buf_t;
 

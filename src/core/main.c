@@ -243,6 +243,19 @@ void *agc_dispatcher_thread(void *arg) {
 }
 #endif
 
+void *dump_thread(void *arg) {
+    sample_buf_t *samples = NULL;
+    while (running) {
+        if (blocking_queue_take(&samples_queue, &samples) != 0)
+            return NULL;
+        if (config.dump_file) {
+            (void)!fwrite(samples->samples, 1, samples->num * samples->sample_size, config.dump_file);
+        }
+        free(samples);
+    }
+    return NULL;
+}
+
 void *channelizer_thread(void *arg) {
     unsigned i;
     sample_buf_t *samples = NULL;
@@ -253,6 +266,10 @@ void *channelizer_thread(void *arg) {
         // get next samples
         if (blocking_queue_take(&samples_queue, &samples) != 0)
             return NULL;
+
+        if (config.dump_file) {
+            (void)!fwrite(samples->samples, 1, samples->num * samples->sample_size, config.dump_file);
+        }
 
         if (config.channels == 96) {
             for (i = 0; running && i + config.channels / 2 <= samples->num; i += config.channels / 2) {
@@ -432,47 +449,58 @@ out:
 void init_threads(int launch_spewer) {
     uintptr_t i;
     unsigned active_channels = 0;
-    pthread_mutex_init(&agc_dispatch_mutex, NULL);
-    pthread_mutex_init(&agc_buf_mutex, NULL);
-    pthread_cond_init(&fft_done_cond, NULL);
-    pthread_cond_init(&dispatch_done_cond, NULL);
-    pthread_cond_init(&agc_buf_ready, NULL);
-    pthread_cond_init(&agc_buf_done, NULL);
-    for (i = 0; i < 40; ++i)
-        if (live_ch[i] >= 0)
-            ++active_channels;
-    pthread_barrier_local_init(&agc_barrier, NULL, active_channels);
+
     blocking_queue_init(&samples_queue, launch_spewer ? 16 : SAMPLES_QUEUE_SIZE);
-    blocking_queue_init(&bursts, BURST_QUEUE_SIZE);
-    agc_threads = calloc(40, sizeof(*agc_threads));
-    pthread_create(&channelizer, NULL, channelizer_thread, NULL);
+
+    if (config.dump_only) {
+        pthread_create(&channelizer, NULL, dump_thread, NULL);
+#ifdef __linux__
+        pthread_setname_np(channelizer, "dumper");
+#endif
+    } else {
+        pthread_mutex_init(&agc_dispatch_mutex, NULL);
+        pthread_mutex_init(&agc_buf_mutex, NULL);
+        pthread_cond_init(&fft_done_cond, NULL);
+        pthread_cond_init(&dispatch_done_cond, NULL);
+        pthread_cond_init(&agc_buf_ready, NULL);
+        pthread_cond_init(&agc_buf_done, NULL);
+        for (i = 0; i < 40; ++i)
+            if (live_ch[i] >= 0)
+                ++active_channels;
+        pthread_barrier_local_init(&agc_barrier, NULL, active_channels);
+
+        blocking_queue_init(&bursts, BURST_QUEUE_SIZE);
+        agc_threads = calloc(40, sizeof(*agc_threads));
+        pthread_create(&channelizer, NULL, channelizer_thread, NULL);
 #ifdef USE_FFTW
-    pthread_create(&fft_thread, NULL, fft_thread_main, NULL);
+        pthread_create(&fft_thread, NULL, fft_thread_main, NULL);
 #else
-    pthread_create(&agc_dispatcher, NULL, agc_dispatcher_thread, NULL);
+        pthread_create(&agc_dispatcher, NULL, agc_dispatcher_thread, NULL);
 #endif
 #ifdef __linux__
-    pthread_setname_np(channelizer, "channelizer");
+        pthread_setname_np(channelizer, "channelizer");
 #ifdef USE_FFTW
-    pthread_setname_np(fft_thread, "fft");
+        pthread_setname_np(fft_thread, "fft");
 #else
-    pthread_setname_np(agc_dispatcher, "agc-dispatcher");
+        pthread_setname_np(agc_dispatcher, "agc-dispatcher");
 #endif
 #endif
-    if (first_live <= last_live) {
-        for (i = first_live; i <= last_live; ++i) {
-            pthread_create(&agc_threads[i], NULL, agc_thread, (void *)i);
+        if (first_live <= last_live) {
+            for (i = first_live; i <= last_live; ++i) {
+                pthread_create(&agc_threads[i], NULL, agc_thread, (void *)i);
 #ifdef __linux__
-            char name[32];
-            snprintf(name, sizeof(name), "agc-%04lu", 2402+i*2);
-            pthread_setname_np(agc_threads[i], name);
+                char name[32];
+                snprintf(name, sizeof(name), "agc-%04lu", 2402+i*2);
+                pthread_setname_np(agc_threads[i], name);
 #endif
+            }
         }
-    }
-    pthread_create(&burst_processor, NULL, burst_processor_thread, NULL);
+        pthread_create(&burst_processor, NULL, burst_processor_thread, NULL);
 #ifdef __linux__
-    pthread_setname_np(burst_processor, "burst_processor");
+        pthread_setname_np(burst_processor, "burst_processor");
 #endif
+    }
+
     if (launch_spewer) {
         pthread_create(&spewer, NULL, spewer_thread, (void *)config.in);
 #ifdef __linux__
@@ -492,18 +520,20 @@ void deinit_threads(int join_spewer) {
 
     pthread_join(channelizer, NULL);
 
-    pthread_mutex_lock(&agc_buf_mutex);
-    pthread_cond_broadcast(&agc_buf_ready);
-    pthread_cond_signal(&agc_buf_done);
-    pthread_mutex_unlock(&agc_buf_mutex);
-    pthread_barrier_local_shutdown(&agc_barrier);
-    if (first_live <= last_live) {
-        for (i = first_live; i <= last_live; ++i)
-            pthread_join(agc_threads[i], NULL);
-    }
+    if (!config.dump_only) {
+        pthread_mutex_lock(&agc_buf_mutex);
+        pthread_cond_broadcast(&agc_buf_ready);
+        pthread_cond_signal(&agc_buf_done);
+        pthread_mutex_unlock(&agc_buf_mutex);
+        pthread_barrier_local_shutdown(&agc_barrier);
+        if (first_live <= last_live) {
+            for (i = first_live; i <= last_live; ++i)
+                pthread_join(agc_threads[i], NULL);
+        }
 
-    blocking_queue_close(&bursts);
-    pthread_join(burst_processor, NULL);
+        blocking_queue_close(&bursts);
+        pthread_join(burst_processor, NULL);
+    }
 }
 
 void sig(int signo) {
@@ -528,36 +558,45 @@ int main(int argc, char **argv) {
         return opt_res < 0 ? 1 : 0;
     }
 
+    if (config.dump_path) {
+        config.dump_file = fopen(config.dump_path, "wb");
+        if (config.dump_file == NULL) {
+            err(1, "Unable to open dump file %s", config.dump_path);
+        }
+    }
+
     if (config.live) {
         sdr = sdr_open_device(&config);
         if (sdr == NULL)
             errx(1, "Failed to initialize SDR device");
     }
-    gen_syndrome_map(1);
+    if (!config.dump_only) {
+        gen_syndrome_map(1);
 
-    unsigned h_len = 2 * config.channels * m + 1;
-    float *h = malloc(sizeof(float) * h_len);
-    liquid_firdes_kaiser(h_len, lp_cutoff / (float)config.channels, 60.0f, 0.0f, h);
-    pfbch2_init(&magic, config.channels, m, h);
-    init_fft(config.channels, BATCH_SIZE);
-    free(h);
+        unsigned h_len = 2 * config.channels * m + 1;
+        float *h = malloc(sizeof(float) * h_len);
+        liquid_firdes_kaiser(h_len, lp_cutoff / (float)config.channels, 60.0f, 0.0f, h);
+        pfbch2_init(&magic, config.channels, m, h);
+        init_fft(config.channels, BATCH_SIZE);
+        free(h);
 
-    agc_buffers = malloc(2 * config.channels * sizeof(*agc_buffers));
-    agc_live = &agc_buffers[config.channels * live_buf];
+        agc_buffers = malloc(2 * config.channels * sizeof(*agc_buffers));
+        agc_live = &agc_buffers[config.channels * live_buf];
 
-    catcher = calloc(40, sizeof(burst_catcher_t));
-    for (i = 0; i < config.channels; ++i) {
-        unsigned freq = config.center_freq + (i < config.channels / 2 ? i : -config.channels + i);
-        if ((freq & 1) == 0 && freq >= 2402 && freq <= 2480) {
-            unsigned ch_num = (freq - 2402) / 2;
-            if (ch_num < first_live) first_live = ch_num;
-            if (ch_num > last_live)  last_live  = ch_num;
-            live_ch[ch_num] = i;
+        catcher = calloc(40, sizeof(burst_catcher_t));
+        for (i = 0; i < config.channels; ++i) {
+            unsigned freq = config.center_freq + (i < config.channels / 2 ? i : -config.channels + i);
+            if ((freq & 1) == 0 && freq >= 2402 && freq <= 2480) {
+                unsigned ch_num = (freq - 2402) / 2;
+                if (ch_num < first_live) first_live = ch_num;
+                if (ch_num > last_live)  last_live  = ch_num;
+                live_ch[ch_num] = i;
+            }
         }
-    }
-    if (first_live <= last_live) {
-        for (i = first_live; i <= last_live; ++i)
-            burst_catcher_create(&catcher[i], 2402 + i * 2);
+        if (first_live <= last_live) {
+            for (i = first_live; i <= last_live; ++i)
+                burst_catcher_create(&catcher[i], 2402 + i * 2);
+        }
     }
 
     init_threads(!config.live);
@@ -586,13 +625,15 @@ int main(int argc, char **argv) {
 
     config_free(&config);
 
-    if (first_live <= last_live) {
-        for (i = first_live; i <= last_live; ++i)
-            burst_catcher_destroy(&catcher[i]);
-    }
-    free(catcher);
+    if (!config.dump_only) {
+        if (first_live <= last_live) {
+            for (i = first_live; i <= last_live; ++i)
+                burst_catcher_destroy(&catcher[i]);
+        }
+        free(catcher);
 
-    pfbch2_release(&magic);
+        pfbch2_release(&magic);
+    }
 
     return 0;
 }

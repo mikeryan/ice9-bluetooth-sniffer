@@ -64,6 +64,7 @@ int hackrf_rx_cb(hackrf_transfer *t) {
     unsigned i;
     sample_buf_t *s = malloc(sizeof(*s) + t->valid_length * 4);
     s->num = t->valid_length / 2;
+    s->sample_size = 2;
     for (i = 0; i < s->num * 2; ++i)
         s->samples[i] = ((int8_t *)t->buffer)[i];
     if (running)
