@@ -28,7 +28,9 @@ static const uint8_t whitening_index[] = {
 };
 
 static unsigned freq_to_channel(unsigned freq) {
+    if (freq < 2402 || freq > 2480) return 0;
     unsigned phys_channel = (freq - 2402) / 2;
+    if (phys_channel >= 40) return 0;
     if (phys_channel == 0) return 37;
     if (phys_channel == 12) return 38;
     if (phys_channel == 39) return 39;
