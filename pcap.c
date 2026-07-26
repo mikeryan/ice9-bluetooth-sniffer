@@ -42,6 +42,25 @@ typedef struct __attribute__((packed)) _pcap_le_header_t {
 #define LE_NOISE_POWER_VALID  0x0004
 
 
+static inline uint16_t pcap_htole16(uint16_t val) {
+#if defined(__BYTE_ORDER__) && __BYTE_ORDER__ == __ORDER_BIG_ENDIAN__
+    return (val << 8) | (val >> 8);
+#else
+    return val;
+#endif
+}
+
+static inline uint32_t pcap_htole32(uint32_t val) {
+#if defined(__BYTE_ORDER__) && __BYTE_ORDER__ == __ORDER_BIG_ENDIAN__
+    return ((val >> 24) & 0xff) |
+           ((val >> 8) & 0xff00) |
+           ((val << 8) & 0xff0000) |
+           ((val << 24) & 0xff000000);
+#else
+    return val;
+#endif
+}
+
 #if !defined( DLT_BLUETOOTH_LE_LL_WITH_PHDR )
 #define DLT_BLUETOOTH_LE_LL_WITH_PHDR 256
 #endif
@@ -49,11 +68,13 @@ typedef struct __attribute__((packed)) _pcap_le_header_t {
 pcap_t *pcap_open(char *path) {
     pcap_t *p;
     pcap_hdr_t h = {
-        .magic_number = 0xa1b2c3d4,
-        .version_major = 2,
-        .version_minor = 4,
-        .snaplen = 4 + 2 + 255 + 3,
-        .network = DLT_BLUETOOTH_LE_LL_WITH_PHDR,
+        .magic_number = pcap_htole32(0xa1b2c3d4),
+        .version_major = pcap_htole16(2),
+        .version_minor = pcap_htole16(4),
+        .thiszone = 0,
+        .sigfigs = 0,
+        .snaplen = pcap_htole32(4 + 2 + 255 + 3),
+        .network = pcap_htole32(DLT_BLUETOOTH_LE_LL_WITH_PHDR),
     };
 
     FILE *f = fopen(path, "w");
@@ -79,13 +100,15 @@ void pcap_write_ble(pcap_t *p, ble_packet_t *b) {
         .rf_channel = (b->freq - 2402) / 2,
         .signal_power = b->rssi_db,
         .noise_power = b->noise_db,
-        .flags = LE_DEWHITENED | LE_SIGNAL_POWER_VALID | LE_NOISE_POWER_VALID,
+        .aa_offenses = 0,
+        .ref_aa = 0,
+        .flags = pcap_htole16(LE_DEWHITENED | LE_SIGNAL_POWER_VALID | LE_NOISE_POWER_VALID),
     };
     pcaprec_hdr_t pcap_header = {
-        .ts_sec   = b->timestamp.tv_sec,
-        .ts_usec  = b->timestamp.tv_nsec/1000,
-        .incl_len = b->len + sizeof(le_header),
-        .orig_len = b->len + sizeof(le_header),
+        .ts_sec   = pcap_htole32((uint32_t)b->timestamp.tv_sec),
+        .ts_usec  = pcap_htole32((uint32_t)(b->timestamp.tv_nsec / 1000)),
+        .incl_len = pcap_htole32((uint32_t)(b->len + sizeof(le_header))),
+        .orig_len = pcap_htole32((uint32_t)(b->len + sizeof(le_header))),
     };
     fwrite(&pcap_header, sizeof(pcap_header), 1, p->f);
     fwrite(&le_header, sizeof(le_header), 1, p->f);
