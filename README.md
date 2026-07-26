@@ -5,10 +5,32 @@ wideband sniffing (4-60 MHz) for HackRF and USRP.
 
 ## Dependencies
 
-This tool requires libliquid, libhackrf, libbladerf, libuhd, and
-libfftw3. On Debian-based systems you can install these using:
+`libliquid` is the only hard dependency. By default, on Linux and MacOS this code
+uses VkFFT (included) for GPU-accelerated FFT support. If you don't wish to or
+can't use that, fftw3 is also a dependency.
 
-    sudo apt install libliquid-dev libhackrf-dev libbladerf-dev libuhd-dev libfftw3-dev
+This tool can be built without SDR libraries, but for live capture you must have
+at least one of `libhackrf`, `libbladerf`, and/or `libuhd`.
+
+### Linux
+
+To install the base dependency:
+
+    sudo apt install libliquid-dev
+
+For Vulkan:
+
+    sudo apt install libvulkan-dev vulkan-tools glslang-dev spirv-tools
+
+Alternatively, for fftw3:
+
+    sudo apt install libfftw3-dev
+
+And finally, pick your favorite SDR libraries (if applicable):
+
+    sudo apt libhackrf-dev libbladerf-dev libuhd-dev
+
+### MacOS
 
 On macOS, fftw3 is not required and [Homebrew](https://brew.sh/) is the
 recommended package manager:
