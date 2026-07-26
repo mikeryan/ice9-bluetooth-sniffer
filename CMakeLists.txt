@@ -17,6 +17,7 @@ else()
     set(VKFFT_ENABLE ON)
 endif()
 option(USE_VKFFT "Should VkFFT (GPU Acceleration) be used?" ${VKFFT_ENABLE})
+option(BUILD_FFT_TESTS "Build FFT verification tests" OFF)
 
 include(FetchContent)
 
@@ -343,7 +344,7 @@ target_link_libraries(test_sdr PRIVATE Threads::Threads)
 set_target_properties(test_sdr PROPERTIES C_STANDARD 99)
 add_test(NAME test_sdr COMMAND test_sdr)
 
-if (USE_VKFFT)
+if (USE_VKFFT AND BUILD_FFT_TESTS)
   add_executable(test_vkfft tests/test_vkfft.cpp vkfft/fft.cc)
   target_include_directories(test_vkfft PRIVATE ${TEST_INCLUDES} "vkfft")
   if(${VKFFT_BACKEND} EQUAL 5)
