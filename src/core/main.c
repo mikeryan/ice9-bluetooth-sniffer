@@ -462,13 +462,15 @@ void init_threads(int launch_spewer) {
     pthread_setname_np(agc_dispatcher, "agc-dispatcher");
 #endif
 #endif
-    for (i = first_live; i <= last_live; ++i) {
-        pthread_create(&agc_threads[i], NULL, agc_thread, (void *)i);
+    if (first_live <= last_live) {
+        for (i = first_live; i <= last_live; ++i) {
+            pthread_create(&agc_threads[i], NULL, agc_thread, (void *)i);
 #ifdef __linux__
-        char name[32];
-        snprintf(name, sizeof(name), "agc-%04lu", 2402+i*2);
-        pthread_setname_np(agc_threads[i], name);
+            char name[32];
+            snprintf(name, sizeof(name), "agc-%04lu", 2402+i*2);
+            pthread_setname_np(agc_threads[i], name);
 #endif
+        }
     }
     pthread_create(&burst_processor, NULL, burst_processor_thread, NULL);
 #ifdef __linux__
@@ -498,8 +500,10 @@ void deinit_threads(int join_spewer) {
     pthread_cond_signal(&agc_buf_done);
     pthread_mutex_unlock(&agc_buf_mutex);
     pthread_barrier_local_shutdown(&agc_barrier);
-    for (i = first_live; i <= last_live; ++i)
-        pthread_join(agc_threads[i], NULL);
+    if (first_live <= last_live) {
+        for (i = first_live; i <= last_live; ++i)
+            pthread_join(agc_threads[i], NULL);
+    }
 
     blocking_queue_close(&bursts);
     pthread_join(burst_processor, NULL);
@@ -554,8 +558,10 @@ int main(int argc, char **argv) {
             live_ch[ch_num] = i;
         }
     }
-    for (i = first_live; i <= last_live; ++i)
-        burst_catcher_create(&catcher[i], 2402 + i * 2);
+    if (first_live <= last_live) {
+        for (i = first_live; i <= last_live; ++i)
+            burst_catcher_create(&catcher[i], 2402 + i * 2);
+    }
 
     init_threads(!config.live);
 
@@ -583,8 +589,10 @@ int main(int argc, char **argv) {
 
     config_free(&config);
 
-    for (i = first_live; i <= last_live; ++i)
-        burst_catcher_destroy(&catcher[i]);
+    if (first_live <= last_live) {
+        for (i = first_live; i <= last_live; ++i)
+            burst_catcher_destroy(&catcher[i]);
+    }
     free(catcher);
 
     pfbch2_release(&magic);
