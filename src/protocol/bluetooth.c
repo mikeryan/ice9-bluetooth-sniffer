@@ -44,7 +44,9 @@ ble_packet_t *ble_burst(uint8_t *bits, unsigned bits_len, unsigned freq, struct 
     unsigned smallest_delta = 0xffffffff;
     unsigned smallest_offset = 0;
     uint32_t smallest_aa = 0;
-    uint8_t smallest_header_len;
+    uint8_t smallest_header_len = 0;
+
+    if (bits_len < 6) return NULL;
 
     // possibly BLE, extract access address
     if (bits[0] == bits[2] && bits[2] == bits[4] &&
@@ -53,6 +55,7 @@ ble_packet_t *ble_burst(uint8_t *bits, unsigned bits_len, unsigned freq, struct 
 
         // try three candidates for AA
         for (i = 6; i < 9; ++i) {
+            if (i + 32 + 8 + 8 > bits_len) continue;
             uint32_t aa = 0;
             for (j = 0; j < 32; ++j)
                 aa |= bits[i+j] << j;
@@ -74,8 +77,10 @@ ble_packet_t *ble_burst(uint8_t *bits, unsigned bits_len, unsigned freq, struct 
 
         // see if any of the candidates have a length that makes sense
         if (smallest_delta < 20) {
+            if (smallest_offset + 32 + (smallest_header_len + 5) * 8 > bits_len) return NULL;
 #define MAX(X,Y) ((X) > (Y) ? (X) : (Y))
             ble_packet_t *p = malloc(sizeof(*p) + MAX(4 + 2 + smallest_header_len + 3, 64)); // FIXME bug in libbtbb
+            if (p == NULL) return NULL;
             p->aa = smallest_aa;
             p->freq = freq;
             p->len = 4 + 2 + smallest_header_len + 3;
