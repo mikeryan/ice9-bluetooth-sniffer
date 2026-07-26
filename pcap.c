@@ -77,7 +77,7 @@ pcap_t *pcap_open(char *path) {
         .network = pcap_htole32(DLT_BLUETOOTH_LE_LL_WITH_PHDR),
     };
 
-    FILE *f = fopen(path, "w");
+    FILE *f = fopen(path, "wb");
     if (f == NULL)
         return NULL;
     p = malloc(sizeof(*p));
