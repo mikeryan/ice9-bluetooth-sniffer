@@ -15,11 +15,10 @@
 const int bladerf_gain_val = 30;
 const unsigned num_transfers = 7;
 
+#include "options.h"
+
 extern sig_atomic_t running;
 extern pid_t self_pid;
-extern unsigned channels;
-extern float samp_rate;
-extern unsigned center_freq;
 
 unsigned timeouts = 0;
 int num_samples_workaround = 0;
@@ -71,7 +70,7 @@ struct bladerf *bladerf_setup(int id) {
     // TODO adjust bw based on capture rate
     if ((status = bladerf_set_bandwidth(bladerf, BLADERF_CHANNEL_RX(0), 56000000, NULL)) != 0)
         errx(1, "Unable to set bladeRF bandwidth: %s", bladerf_strerror(status));
-    if ((status = bladerf_set_frequency(bladerf, BLADERF_CHANNEL_RX(0), center_freq * 1e6)) != 0)
+    if ((status = bladerf_set_frequency(bladerf, BLADERF_CHANNEL_RX(0), config.center_freq * 1e6)) != 0)
         errx(1, "Unable to set bladeRF center frequency: %s", bladerf_strerror(status));
     if ((status = bladerf_set_gain_mode(bladerf, BLADERF_CHANNEL_RX(0), BLADERF_GAIN_MGC)) != 0)
         errx(1, "Unable to set bladeRF manual gain control: %s", bladerf_strerror(status));
@@ -118,15 +117,15 @@ void *bladerf_rx_cb(struct bladerf *bladerf, struct bladerf_stream *stream, stru
 void *bladerf_stream_thread(void *arg) {
     struct bladerf *bladerf = (struct bladerf *)arg;
     struct bladerf_stream *stream;
-    struct bladerf_rational_rate rate = { .integer = samp_rate, .num = 0, .den = 1 };
+    struct bladerf_rational_rate rate = { .integer = (uint64_t)config.samp_rate, .num = 0, .den = 1 };
     void **buffers = NULL;
     unsigned timeout;
     int status;
 
 #ifdef BLADERF_OVERSAMPLE
-    if ((status = bladerf_init_stream(&stream, bladerf, bladerf_rx_cb, &buffers, num_transfers, BLADERF_FORMAT_SC8_Q7, channels / 2 * 4096, num_transfers, NULL)) != 0)
+    if ((status = bladerf_init_stream(&stream, bladerf, bladerf_rx_cb, &buffers, num_transfers, BLADERF_FORMAT_SC8_Q7, config.channels / 2 * 4096, num_transfers, NULL)) != 0)
 #else
-    if ((status = bladerf_init_stream(&stream, bladerf, bladerf_rx_cb, &buffers, num_transfers, BLADERF_FORMAT_SC16_Q11, channels / 2 * 4096, num_transfers, NULL)) != 0)
+    if ((status = bladerf_init_stream(&stream, bladerf, bladerf_rx_cb, &buffers, num_transfers, BLADERF_FORMAT_SC16_Q11, config.channels / 2 * 4096, num_transfers, NULL)) != 0)
 #endif
         errx(1, "Unable to initialize bladeRF stream: %s", bladerf_strerror(status));
 
@@ -135,7 +134,7 @@ void *bladerf_stream_thread(void *arg) {
         errx(1, "Unable to set bladeRF sample rate: %s", bladerf_strerror(status));
 
     // FIXME get the 4096 out of here
-    timeout = 1000 * channels / 2 * 4096 / samp_rate;
+    timeout = 1000 * config.channels / 2 * 4096 / config.samp_rate;
     if (bladerf_set_stream_timeout(bladerf, BLADERF_MODULE_RX, timeout * (num_transfers + 2)) != 0)
         errx(1, "Unable to set bladeRF timeout");
 

@@ -10,8 +10,7 @@
 #include "bluetooth.h"
 #include "btbb/btbb.h"
 #include "pcap.h"
-
-extern pcap_t *pcap;
+#include "options.h"
 
 static const uint8_t whitening[] = {
     1, 1, 1, 1, 0, 1, 0, 1, 0, 1, 0, 0, 0, 0, 1, 0, 1, 1, 0, 1, 1, 1, 1, 0, 0,
@@ -108,8 +107,8 @@ void bluetooth_detect(uint8_t *bits, unsigned len, unsigned freq, unsigned rssi,
             p->rssi_db = rssi;
             p->noise_db = noise;
             *aa_out = p->aa;
-            if (pcap)
-                pcap_write_ble(pcap, p);
+            if (config.pcap)
+                pcap_write_ble(config.pcap, p);
             free(p);
         }
     }

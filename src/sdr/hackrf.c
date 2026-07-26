@@ -10,13 +10,11 @@
 #include <libhackrf/hackrf.h>
 
 #include "sdr.h"
+#include "options.h"
 
 const unsigned vga_gain = 32;
 const unsigned lna_gain = 32;
 
-extern float samp_rate;
-extern unsigned center_freq;
-extern char *serial;
 extern sig_atomic_t running;
 
 void hackrf_list(void) {
@@ -36,21 +34,21 @@ hackrf_device *hackrf_setup(void) {
     int r;
     hackrf_device *hackrf;
 
-    if (samp_rate > 20e6)
+    if (config.samp_rate > 20e6)
         errx(1, "Invalid number of channels for HackRF, must be 20 or fewer");
 
     hackrf_init();
 
-    if (serial == NULL) {
+    if (config.serial == NULL) {
         if ((r = hackrf_open(&hackrf)) != HACKRF_SUCCESS)
             errx(1, "Unable to open HackRF: %s", hackrf_error_name(r));
     } else {
-        if ((r = hackrf_open_by_serial(serial, &hackrf)) != HACKRF_SUCCESS)
+        if ((r = hackrf_open_by_serial(config.serial, &hackrf)) != HACKRF_SUCCESS)
             errx(1, "Unable to open HackRF: %s", hackrf_error_name(r));
     }
-    if ((r = hackrf_set_sample_rate(hackrf, samp_rate)) != HACKRF_SUCCESS)
+    if ((r = hackrf_set_sample_rate(hackrf, config.samp_rate)) != HACKRF_SUCCESS)
         errx(1, "Unable to set HackRF sample rate: %s", hackrf_error_name(r));
-    if ((r = hackrf_set_freq(hackrf, center_freq * 1e6)) != HACKRF_SUCCESS)
+    if ((r = hackrf_set_freq(hackrf, config.center_freq * 1e6)) != HACKRF_SUCCESS)
         errx(1, "Unable to set HackRF center frequency: %s", hackrf_error_name(r));
     if ((r = hackrf_set_vga_gain(hackrf, vga_gain)) != HACKRF_SUCCESS)
         errx(1, "Unable to set HackRF VGA gain: %s", hackrf_error_name(r));

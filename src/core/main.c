@@ -39,8 +39,10 @@
 // only needed on macOS
 #include "pthread_barrier.h"
 
-float samp_rate = 0.f;
-unsigned channels = 96;
+#include "options.h"
+
+sniffer_config_t config;
+
 int live_ch[40] = {
     -1, -1, -1, -1, -1, -1, -1, -1,
     -1, -1, -1, -1, -1, -1, -1, -1,
@@ -48,22 +50,13 @@ int live_ch[40] = {
     -1, -1, -1, -1, -1, -1, -1, -1,
     -1, -1, -1, -1, -1, -1, -1, -1,
 };
-unsigned first_live = UINT_MAX, last_live = 0;;
-unsigned center_freq = 2441;
-pcap_t *pcap = NULL;
+unsigned first_live = UINT_MAX, last_live = 0;
 char *base_name = NULL;
-int live = 0;
-FILE *in = NULL;
-char *serial = NULL;
-char *usrp_serial = NULL;
-int bladerf_num = -1;
-int verbose = 0;
-int stats = 0;
 
 volatile sig_atomic_t running = 1;
 pid_t self_pid;
 
-unsigned sps(void) { return (unsigned)(samp_rate / channels / 1e6f * 2.0f); }
+unsigned sps(void) { return (unsigned)(config.samp_rate / config.channels / 1e6f * 2.0f); }
 
 const float sym_rate = 1e6f;
 const float lp_cutoff = 0.75f; // cutoff in MHz
@@ -121,13 +114,13 @@ void pfbch_execute_block(int8_t *samples, float complex *buf, unsigned buf_pos) 
     int16_t out[96*2]; // FIXME (max number of channels we support)
 
     pfbch2_execute(&magic, samples, out);
-    for (i = 0; i < channels; ++i)
-        buf[channels * buf_pos + i] = out[2*i] / 32768.f + out[2*i + 1] / 32768.f * I;
+    for (i = 0; i < config.channels; ++i)
+        buf[config.channels * buf_pos + i] = out[2*i] / 32768.f + out[2*i + 1] / 32768.f * I;
 }
 
 void push_samples(sample_buf_t *buf) {
     if (blocking_queue_add(&samples_queue, buf) == BQ_FULL) {
-        if (verbose)
+        if (config.verbose)
             printf("WARNING: dropped samples on the floor. try fewer channels or a bigger buffer.\n");
         free(buf);
     }
@@ -182,11 +175,11 @@ void agc_submit(float complex *fft_out) {
     static unsigned sum_count = 0;
     unsigned i, j;
 
-    for (i = 0; i < channels; ++i)
+    for (i = 0; i < config.channels; ++i)
         for (j = 0; j < BATCH_SIZE; ++j)
-            agc_live[i].buffer[j] = fft_out[j * channels + i] / (float)channels;
+            agc_live[i].buffer[j] = fft_out[j * config.channels + i] / (float)config.channels;
 
-    if (stats) {
+    if (config.stats) {
         unsigned long now = now_us();
         ch_sum += now - ch_start;
         ch_start = now;
@@ -203,18 +196,18 @@ void agc_submit(float complex *fft_out) {
     agc_dead = agc_live;
     agc_dead_size = BATCH_SIZE; //agc_live_size;
     live_buf = 1 - live_buf;
-    agc_live = &agc_buffers[channels * live_buf];
+    agc_live = &agc_buffers[config.channels * live_buf];
     agc_live_size = 0;
     pthread_cond_broadcast(&agc_buf_ready);
     pthread_mutex_unlock(&agc_buf_mutex);
 
-    if (stats) {
+    if (config.stats) {
         sum += agc_end - agc_start;
         if (++sum_count == avg_count) {
             double eff_samp_rate = (last_live - first_live + 1) * AGC_BUFFER_SIZE * avg_count * 2e6 / sum;
-            double rel_rate = eff_samp_rate / ((channels-2) * 2e6);
-            double ch_samp_rate = AGC_BUFFER_SIZE * channels / 2 * avg_count * 1e6 / ch_sum;
-            double ch_rel_rate = ch_samp_rate / samp_rate;
+            double rel_rate = eff_samp_rate / ((config.channels-2) * 2e6);
+            double ch_samp_rate = AGC_BUFFER_SIZE * config.channels / 2 * avg_count * 1e6 / ch_sum;
+            double ch_rel_rate = ch_samp_rate / config.samp_rate;
             char prefix = ' ', agc_prefix = ' ';
             ch_samp_rate = _convert_stats(ch_samp_rate, &prefix);
             eff_samp_rate = _convert_stats(eff_samp_rate, &agc_prefix);
@@ -241,7 +234,7 @@ void *agc_dispatcher_thread(void *arg) {
             pthread_mutex_unlock(&agc_dispatch_mutex);
             pthread_exit(NULL);
         }
-        memcpy(my_fft, fft_out, BATCH_SIZE * channels * sizeof(float complex));
+        memcpy(my_fft, fft_out, BATCH_SIZE * config.channels * sizeof(float complex));
         release_buffer(fft);
         fft_out = NULL;
         pthread_cond_signal(&dispatch_done_cond);
@@ -264,8 +257,8 @@ void *channelizer_thread(void *arg) {
         if (blocking_queue_take(&samples_queue, &samples) != 0)
             return NULL;
 
-        if (channels == 96) {
-            for (i = 0; running && i + channels / 2 <= samples->num; i += channels / 2) {
+        if (config.channels == 96) {
+            for (i = 0; running && i + config.channels / 2 <= samples->num; i += config.channels / 2) {
                 pfbch_execute_block_96(&samples->samples[2*i], fft_in, fft_in_pos);
                 if (++fft_in_pos == BATCH_SIZE) {
                     fft_in = get_next_buffer();
@@ -274,7 +267,7 @@ void *channelizer_thread(void *arg) {
             }
         } else {
             // channelize them
-            for (i = 0; running && i + channels / 2 <= samples->num; i += channels / 2) {
+            for (i = 0; running && i + config.channels / 2 <= samples->num; i += config.channels / 2) {
                 pfbch_execute_block(&samples->samples[2*i], fft_in, fft_in_pos);
                 if (++fft_in_pos == BATCH_SIZE) {
                     fft_in = get_next_buffer();
@@ -308,7 +301,7 @@ void *agc_thread(void *id_ptr) {
                     memset(burst, 0, sizeof(*burst));
                 } else {
                     if (blocking_queue_add(&bursts, burst) == BQ_FULL) {
-                        if (verbose)
+                        if (config.verbose)
                             printf("WARNING: dropped burst on the floor. try fewer channels.\n");
                         burst_destroy(burst);
                         memset(burst, 0, sizeof(*burst));
@@ -324,7 +317,7 @@ void *agc_thread(void *id_ptr) {
 
         if (pthread_barrier_local_wait(&agc_barrier) == 1) {
             // we're the lucky thread!
-            if (stats)
+            if (config.stats)
                 agc_end = now_us();
             pthread_mutex_lock(&agc_buf_mutex);
             agc_dead = NULL;
@@ -347,16 +340,16 @@ int queue_empty(volatile Blocking_Queue *q) {
 
 void *spewer_thread(void *in_ptr) {
     size_t r;
-    FILE *in = (FILE *)in_ptr;
+    FILE *in_file = (FILE *)in_ptr;
 
-    sample_buf_t *samples = malloc(sizeof(*samples) + sizeof(int8_t) * 2 * channels * AGC_BUFFER_SIZE);
-    while (running && (r = fread(&samples->samples, sizeof(int8_t) * 2 * channels * AGC_BUFFER_SIZE, 1, in)) > 0) {
-        samples->num = channels * AGC_BUFFER_SIZE;
+    sample_buf_t *samples = malloc(sizeof(*samples) + sizeof(int8_t) * 2 * config.channels * AGC_BUFFER_SIZE);
+    while (running && (r = fread(&samples->samples, sizeof(int8_t) * 2 * config.channels * AGC_BUFFER_SIZE, 1, in_file)) > 0) {
+        samples->num = config.channels * AGC_BUFFER_SIZE;
         if (blocking_queue_put(&samples_queue, samples) != 0) {
             free(samples);
             return NULL;
         }
-        samples = malloc(sizeof(*samples) + sizeof(int8_t) * 2 * channels * AGC_BUFFER_SIZE);
+        samples = malloc(sizeof(*samples) + sizeof(int8_t) * 2 * config.channels * AGC_BUFFER_SIZE);
     }
     free(samples);
 
@@ -384,7 +377,7 @@ void *burst_processor_thread(void *arg) {
             uint32_t lap = 0xffffffff, aa = 0xffffffff;
             bluetooth_detect(burst->packet.bits, burst->packet.bits_len, burst->freq, burst->rssi_db, burst->noise_db, burst->timestamp, &lap, &aa);
 
-            if (verbose) {
+            if (config.verbose) {
                 printf("burst %4u-%04u, %d samps, rssi %f dB, noise %f dB ", burst->freq, burst->num, burst->len, burst->rssi_db, burst->noise_db);
                 printf("cfo %f deviation %f ", burst->packet.cfo, burst->packet.deviation);
                 if (lap != 0xffffffff)
@@ -482,7 +475,7 @@ void init_threads(int launch_spewer) {
     pthread_setname_np(burst_processor, "burst_processor");
 #endif
     if (launch_spewer) {
-        pthread_create(&spewer, NULL, spewer_thread, (void *)in);
+        pthread_create(&spewer, NULL, spewer_thread, (void *)config.in);
 #ifdef __linux__
         pthread_setname_np(spewer, "spewer");
 #endif
@@ -516,8 +509,6 @@ void sig(int signo) {
     running = 0;
 }
 
-int parse_options(int argc, char **argv);
-
 int main(int argc, char **argv) {
     unsigned i;
     // char *out_filename = NULL;
@@ -534,35 +525,36 @@ int main(int argc, char **argv) {
     // enables , separator in printf
     setlocale(LC_NUMERIC, "");
 
-    int opt_res = parse_options(argc, argv);
+    int opt_res = parse_options(argc, argv, &config);
     if (opt_res != 0) {
+        config_free(&config);
         return opt_res < 0 ? 1 : 0;
     }
 
-    if (live) {
+    if (config.live) {
         // TODO select first available interface
-        if (bladerf_num >= 0)
-            bladerf = bladerf_setup(bladerf_num);
-        else if (usrp_serial != NULL)
-            usrp = usrp_setup(usrp_serial);
+        if (config.bladerf_num >= 0)
+            bladerf = bladerf_setup(config.bladerf_num);
+        else if (config.usrp_serial != NULL)
+            usrp = usrp_setup(config.usrp_serial);
         else
             hackrf = hackrf_setup();
     }
     gen_syndrome_map(1);
 
-    unsigned h_len = 2*channels*m + 1;
+    unsigned h_len = 2 * config.channels * m + 1;
     float *h = malloc(sizeof(float) * h_len);
-    liquid_firdes_kaiser(h_len, lp_cutoff/(float)channels, 60.0f, 0.0f, h);
-    pfbch2_init(&magic, channels, m, h);
-    init_fft(channels, BATCH_SIZE);
+    liquid_firdes_kaiser(h_len, lp_cutoff / (float)config.channels, 60.0f, 0.0f, h);
+    pfbch2_init(&magic, config.channels, m, h);
+    init_fft(config.channels, BATCH_SIZE);
     free(h);
 
-    agc_buffers = malloc(2 * channels * sizeof(*agc_buffers));
-    agc_live = &agc_buffers[channels * live_buf];
+    agc_buffers = malloc(2 * config.channels * sizeof(*agc_buffers));
+    agc_live = &agc_buffers[config.channels * live_buf];
 
     catcher = calloc(40, sizeof(burst_catcher_t));
-    for (i = 0; i < channels; ++i) {
-        unsigned freq = center_freq + (i < channels / 2 ? i : -channels + i);
+    for (i = 0; i < config.channels; ++i) {
+        unsigned freq = config.center_freq + (i < config.channels / 2 ? i : -config.channels + i);
         if ((freq & 1) == 0 && freq >= 2402 && freq <= 2480) {
             unsigned ch_num = (freq - 2402) / 2;
             if (ch_num < first_live) first_live = ch_num;
@@ -573,9 +565,9 @@ int main(int argc, char **argv) {
     for (i = first_live; i <= last_live; ++i)
         burst_catcher_create(&catcher[i], 2402 + i * 2);
 
-    init_threads(!live);
+    init_threads(!config.live);
 
-    if (live) {
+    if (config.live) {
         if (hackrf != NULL)
             hackrf_start_rx(hackrf, hackrf_rx_cb, NULL);
         else if (usrp != NULL)
@@ -585,13 +577,13 @@ int main(int argc, char **argv) {
     }
 
     while (running) {
-        if (live && hackrf != NULL && !hackrf_is_streaming(hackrf))
+        if (config.live && hackrf != NULL && !hackrf_is_streaming(hackrf))
             break;
         pause();
     }
     running = 0;
 
-    if (live) {
+    if (config.live) {
         if (hackrf != NULL)
             hackrf_stop_rx(hackrf);
         else if (usrp != NULL)
@@ -600,9 +592,9 @@ int main(int argc, char **argv) {
             bladerf_enable_module(bladerf, BLADERF_MODULE_RX, false);
     }
 
-    deinit_threads(!live);
+    deinit_threads(!config.live);
 
-    if (live) {
+    if (config.live) {
         if (hackrf != NULL) {
             hackrf_close(hackrf);
             hackrf_exit();
@@ -615,8 +607,7 @@ int main(int argc, char **argv) {
         }
     }
 
-    if (pcap)
-        pcap_close(pcap);
+    config_free(&config);
 
     for (i = first_live; i <= last_live; ++i)
         burst_catcher_destroy(&catcher[i]);

@@ -20,25 +20,36 @@
 
 #include <libhackrf/hackrf.h>
 
+#include "options.h"
 #include "hackrf.h"
 #include "bladerf.h"
-#include "pcap.h"
 #include "usrp.h"
 
-extern FILE *in;
-extern char *serial;
-extern char *usrp_serial;
-extern int bladerf_num;
-
-extern float samp_rate;
-extern unsigned channels;
-extern unsigned center_freq;
-extern pcap_t *pcap;
-extern int live;
-extern int verbose;
-extern int stats;
-
 void usage(int exitcode);
+
+void config_init(sniffer_config_t *cfg) {
+    memset(cfg, 0, sizeof(*cfg));
+    cfg->bladerf_num = -1;
+}
+
+void config_free(sniffer_config_t *cfg) {
+    if (cfg->serial) {
+        free(cfg->serial);
+        cfg->serial = NULL;
+    }
+    if (cfg->usrp_serial) {
+        free(cfg->usrp_serial);
+        cfg->usrp_serial = NULL;
+    }
+    if (cfg->pcap) {
+        pcap_close(cfg->pcap);
+        cfg->pcap = NULL;
+    }
+    if (cfg->in && cfg->in != stdin) {
+        fclose(cfg->in);
+        cfg->in = NULL;
+    }
+}
 
 static void do_mkdir(char *path) {
     if (mkdir(path, 0777) < 0 && errno != EEXIST)
@@ -102,11 +113,12 @@ static void _print_config(void) {
     printf("arg {number=1}{call=--center-freq}{display=Center Frequency}{tooltip=Center frequency to capture on}{type=integer}{range=2400,2480}{default=2441}\n");
 }
 
-int parse_options(int argc, char **argv) {
+int parse_options(int argc, char **argv, sniffer_config_t *cfg) {
     int do_interfaces = 0, do_dlts = 0, do_config = 0, do_capture = 0, do_install = 0;
     int ch;
 
     optind = 1; // Reset getopt state for re-entrancy
+    config_init(cfg);
 
     static const struct option longopts[] = {
         /* extcap */
@@ -150,11 +162,11 @@ int parse_options(int argc, char **argv) {
 
             case 'i':
                 if (strstr(optarg, "hackrf-") == optarg)
-                    serial = strdup(optarg + strlen("hackrf-"));
+                    cfg->serial = strdup(optarg + strlen("hackrf-"));
                 else if (strstr(optarg, "bladerf") == optarg)
-                    bladerf_num = atoi(optarg + strlen("bladerf"));
+                    cfg->bladerf_num = atoi(optarg + strlen("bladerf"));
                 else if (strstr(optarg, "usrp-") == optarg)
-                    usrp_serial = strdup(usrp_get_serial(optarg));
+                    cfg->usrp_serial = strdup(usrp_get_serial(optarg));
                 else {
                     fprintf(stderr, "invalid interface, must start with \"hackrf-\" or \"bladerf\"\n");
                     return -1;
@@ -162,39 +174,39 @@ int parse_options(int argc, char **argv) {
                 break;
 
             case 'w':
-                if ((pcap = pcap_open(optarg)) == NULL) {
+                if ((cfg->pcap = pcap_open(optarg)) == NULL) {
                     fprintf(stderr, "Unable to create PCAP %s\n", optarg);
                     return -1;
                 }
                 break;
 
             case 'f':
-                in = fopen(optarg, "r");
-                if (in == NULL) {
+                cfg->in = fopen(optarg, "r");
+                if (cfg->in == NULL) {
                     fprintf(stderr, "Can't open input file\n");
                     return -1;
                 }
                 break;
 
             case 'C':
-                channels = atoi(optarg);
+                cfg->channels = atoi(optarg);
                 break;
 
             case 'c':
-                center_freq = atoi(optarg);
+                cfg->center_freq = atoi(optarg);
                 break;
 
             case 'a':
-                channels = 96;
-                center_freq = 2441;
+                cfg->channels = 96;
+                cfg->center_freq = 2441;
                 break;
 
             case 'v':
-                verbose = 1;
+                cfg->verbose = 1;
                 break;
 
             case 's':
-                stats = 1;
+                cfg->stats = 1;
                 break;
 
             case 'I':
@@ -215,7 +227,7 @@ int parse_options(int argc, char **argv) {
     }
 
     int sum = do_interfaces + do_dlts + do_config + do_capture;
-    if (in == NULL) {
+    if (cfg->in == NULL) {
         if (sum == 0) {
             usage(0);
             return 1;
@@ -242,21 +254,21 @@ int parse_options(int argc, char **argv) {
         return 1;
     }
 
-    if (center_freq == 0) {
+    if (cfg->center_freq == 0) {
         fprintf(stderr, "center freq is required\n");
         return -1;
     }
-    if (center_freq < 2400 || center_freq > 2480) {
+    if (cfg->center_freq < 2400 || cfg->center_freq > 2480) {
         fprintf(stderr, "invalid center freq\n");
         return -1;
     }
-    if (channels < 4 || channels > 96 || (channels % 4) != 0) {
+    if (cfg->channels < 4 || cfg->channels > 96 || (cfg->channels % 4) != 0) {
         fprintf(stderr, "invalid channels, must be between 4 and 96 and divisible by 4\n");
         return -1;
     }
-    samp_rate = channels * 1e6f;
+    cfg->samp_rate = cfg->channels * 1e6f;
     if (do_capture)
-        live = 1;
+        cfg->live = 1;
 
     return 0;
 }

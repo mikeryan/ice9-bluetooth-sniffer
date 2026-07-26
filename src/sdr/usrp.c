@@ -10,12 +10,10 @@
 #include <uhd.h>
 
 #include "sdr.h"
+#include "options.h"
 
 extern sig_atomic_t running;
 extern pid_t self_pid;
-extern unsigned channels;
-extern float samp_rate;
-extern unsigned center_freq;
 
 const float usrp_gain_val = 60;
 
@@ -125,7 +123,7 @@ uhd_usrp_handle usrp_setup(char *serial) {
     uhd_error error;
     char arg[128];
     uhd_tune_request_t tune_request = {
-        .target_freq = center_freq * 1e6,
+        .target_freq = config.center_freq * 1e6,
         .rf_freq_policy = UHD_TUNE_REQUEST_POLICY_AUTO,
         .dsp_freq_policy = UHD_TUNE_REQUEST_POLICY_AUTO,
     };
@@ -138,7 +136,7 @@ uhd_usrp_handle usrp_setup(char *serial) {
         errx(1, "Error opening UHD: %u", error);
 
     // TODO error handling
-    uhd_usrp_set_rx_rate(usrp, samp_rate, 0);
+    uhd_usrp_set_rx_rate(usrp, config.samp_rate, 0);
     uhd_usrp_set_rx_gain(usrp, usrp_gain_val, 0, "");
     uhd_usrp_set_rx_freq(usrp, &tune_request, 0, &tune_result);
     char str[128];
