@@ -61,6 +61,7 @@ void pfbch2_release(pfbch2_t *c) {
     for (i = 0; i < c->M; ++i)
         window_release(&c->w[i]);
     free(c->w);
+    free(c->h_sub);
 }
 
 void pfbch2_execute(pfbch2_t *c, int8_t *x, int16_t *y) {
