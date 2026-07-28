@@ -9,12 +9,30 @@
 
 #include "pfbch2.h"
 
+/* quantize a prototype filter tap to Q15.
+ *
+ * liquid_firdes_kaiser() normalizes its output to unit peak gain, so the
+ * center tap is exactly 1.0 and h * 32768 lands one count outside int16.
+ * casting that wraps it to -32768, inverting the sign of the single largest
+ * coefficient in one polyphase branch. every branch feeds every output bin
+ * through the FFT, so the resulting error is a scaled copy of the wideband
+ * input spread flat across all channels: a signal-proportional spur floor ~30
+ * dB below a strong carrier, present only while something is transmitting.
+ * saturate instead of wrapping.
+ */
+static inline int16_t q15(float v) {
+    float q = roundf(v * 32768.f);
+    if (q >  32767.f) return  32767;
+    if (q < -32768.f) return -32768;
+    return (int16_t)q;
+}
+
 void pfbch2_init(pfbch2_t *c, unsigned M, unsigned m, float *h_float) {
     unsigned i, n;
     int16_t *h = malloc((2*m*M+1)*sizeof(int16_t));
 
     for (i = 0; i < 2 * M * m + 1; ++i)
-        h[i] = (int16_t)roundf(h_float[i] * 32768.f);
+        h[i] = q15(h_float[i]);
 
     memset(c, 0, sizeof(*c));
 
